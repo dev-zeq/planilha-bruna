@@ -58,7 +58,7 @@ function updateSync(){
   :['Em dia','ok'];
  el.hidden=false;el.textContent=text;el.className='sync '+kind;
 }
-function sessionCard(s,result,own){
+function sessionCard(s,result,own,stravaPrivate){
  const done=result?.status==='done';
  const tag=s.pending?'Aguardando envio':s.state==='open'?'A definir':'';
  const meta=[s.period!=='Não definido'?s.period:'',s.planned_km!=null?fmtKm(s.planned_km)+' km planejados':''].filter(Boolean).join(' · ');
@@ -67,7 +67,7 @@ function sessionCard(s,result,own){
   const parts=['✓ Feito'];
   if(result.actual_km!=null)parts.push(fmtKm(result.actual_km)+' km');
   if(result.duration_seconds!=null)parts.push(durationText(result.duration_seconds),paceText(result.actual_km,result.duration_seconds));
-  if(result.source==='strava')parts.push('Strava (privado)');
+  if(result.source==='strava')parts.push(stravaPrivate?'Strava (privado)':'Strava');
   if(result.pending)parts.push('envio pendente');
   outcome=`<p class="result ok">${esc(parts.join(' · '))}</p>`;
  }else if(result?.status==='skipped')outcome=`<p class="result skip">Não realizado${result.pending?' · envio pendente':''}</p>`;
@@ -87,6 +87,7 @@ function render(){
  $('today').hidden=isoLocal(monday())===from;
  const sessions=v.sessions.filter(s=>s.training_date>=from&&s.training_date<=to&&(!s.target_user_ids.length||s.target_user_ids.includes(viewing)));
  const resultOf=s=>v.results.find(r=>r.session_id===s.id&&r.user_id===viewing);
+ const stravaPrivate=!members.find(m=>m.user_id===viewing)?.strava_shared_at;
  const done=sessions.filter(s=>resultOf(s)?.status==='done');
  $('summaryDone').textContent=sessions.length?`${done.length} de ${sessions.length} ${sessions.length===1?'feito':'feitos'}`:'Nenhum treino nesta semana';
  $('summaryKm').textContent=fmtKm(done.reduce((sum,s)=>sum+(Number(resultOf(s).actual_km)||0),0))+' km';
@@ -105,7 +106,7 @@ function render(){
  const emptyText=empty.length===7?'Nenhum treino nesta semana. Toque em um dia ou em Novo treino para planejar.'
   :empty.length?cap(empty.length>1?empty.slice(0,-1).join(', ')+' e '+empty.at(-1):empty[0])+' sem treino'
   :'';
- setHTML($('days'),days.filter(d=>d.rows.length).map(d=>`<section class="day" id="day-${d.iso}"><h2>${d.iso===todayISO?'Hoje, ':''}${esc(d.iso===todayISO?d.name:cap(d.name))} ${d.date.getDate()}</h2>${d.rows.map(s=>sessionCard(s,resultOf(s),own)).join('')}</section>`).join('')+(emptyText?`<p class="empty-days">${esc(emptyText)}</p>`:''));
+ setHTML($('days'),days.filter(d=>d.rows.length).map(d=>`<section class="day" id="day-${d.iso}"><h2>${d.iso===todayISO?'Hoje, ':''}${esc(d.iso===todayISO?d.name:cap(d.name))} ${d.date.getDate()}</h2>${d.rows.map(s=>sessionCard(s,resultOf(s),own,stravaPrivate)).join('')}</section>`).join('')+(emptyText?`<p class="empty-days">${esc(emptyText)}</p>`:''));
  if(scrollToToday){
   scrollToToday=false;
   const first=days.find(d=>d.rows.length);
@@ -291,7 +292,7 @@ try{
  const needsPassword=['recovery','invite'].includes(incoming.get('type'));
  if(needsPassword)setAuthMode('password');
  client=window.supabase.createClient(URL_API,PUBLIC_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:(url,options={})=>fetch(url,{...options,signal:options.signal||AbortSignal.timeout(15000)})}});
- stravaUI=setupStrava({isVisible:()=>tab==='strava',client,getUser:()=>user,getSnapshot:view,refresh:()=>refresh(true),oauthReturn:stravaReturn});
+ stravaUI=setupStrava({isVisible:()=>tab==='strava',getSharing:()=>Boolean(members.find(m=>m.user_id===user?.id)?.strava_shared_at),setSharing:async share=>{check(await client.rpc('set_strava_sharing',{p_share:share}));await refresh(true);},client,getUser:()=>user,getSnapshot:view,refresh:()=>refresh(true),oauthReturn:stravaReturn});
  client.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(event==='PASSWORD_RECOVERY'){generation++;user=session.user;group=null;showPanel('auth');setAuthMode('password');message('Defina sua nova senha.');}else if(authMode!=='password')void guarded(()=>handleSession(session));},0);});
  const {data,error}=await client.auth.getSession();if(error)throw error;
  if(needsPassword&&data.session){user=data.session.user;showPanel('auth');setAuthMode('password');message('Defina sua nova senha.');}else {setAuthMode('login');await handleSession(data.session);if(incoming.get('error'))message('Este link de acesso expirou ou já foi utilizado. Solicite um novo link em Esqueci a senha.',true);}
