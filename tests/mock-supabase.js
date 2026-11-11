@@ -4,13 +4,14 @@
  const members=users.map((u,i)=>({user_id:u.id,group_id:'g',display_name:['Ezequiel','Bruna','Renato Cirino'][i]}));
  const state={sessions:[],results:[],operations:new Set(),user:null,callback:()=>{},offline:false};
  state.invitation=new URLSearchParams(location.hash.slice(1)).get('type')==='invite';if(state.invitation)state.user=users[0];
- const tables={training_members:members,training_sessions:state.sessions,training_results:state.results};
+ state.stravaConfigured=true;state.stravaConnections={a:{athlete_id:123,athlete_name:'Atleta A privado'}};state.stravaActivities=[{user_id:'a',activity_id:456,name:'Corrida privada A',local_date:'2026-11-11',distance_m:10000,moving_seconds:2400,start_date:'2026-11-11T09:00:00Z'}];state.stravaCalls=[];
+ const tables={training_strava_activities:state.stravaActivities,training_members:members,training_sessions:state.sessions,training_results:state.results};
  window.testBackend=state;window.confirm=()=>true;
  const query=table=>{
   let filters=[],start=0,end=Infinity,limit=Infinity;
-  const q={select(){return q;},eq(k,v){filters.push(r=>r[k]===v);return q;},is(k,v){filters.push(r=>(r[k]??null)===v);return q;},in(k,v){filters.push(r=>v.includes(r[k]));return q;},order(){return q;},limit(n){limit=n;return q;},range(a,b){start=a;end=b;return q;},then(resolve){resolve({data:structuredClone(tables[table].filter(r=>filters.every(f=>f(r))).slice(start,Math.min(end+1,limit))),error:null});}};return q;
+  const q={select(){return q;},eq(k,v){filters.push(r=>r[k]===v);return q;},is(k,v){filters.push(r=>(r[k]??null)===v);return q;},in(k,v){filters.push(r=>v.includes(r[k]));return q;},order(){return q;},limit(n){limit=n;return q;},range(a,b){start=a;end=b;return q;},then(resolve){resolve({data:structuredClone(tables[table].filter(r=>(table!=='training_results'||r.source!=='strava'||r.user_id===state.user?.id)&&filters.every(f=>f(r))).slice(start,Math.min(end+1,limit))),error:null});}};return q;
  };
- const client={from:query,async rpc(name,{op_id,body}={}){
+ const client={functions:{invoke:async(name,{body})=>{state.stravaCalls.push({uid:state.user.id,...body});if(body.action==='status')return {data:{configured:state.stravaConfigured,connection:state.stravaConnections[state.user.id]||null}};if(body.action==='sync')return {data:{imported:1}};if(body.action==='link'){const existing=state.results.find(r=>r.session_id===body.session_id&&r.user_id===state.user.id);if(existing?.version!==body.version)return {data:{error:'O resultado mudou.'}};Object.assign(existing,{source:'strava',strava_activity_id:body.activity_id,version:existing.version+1});return {data:{linked:true}};}return {data:{}};}},from:query,async rpc(name,{op_id,body}={}){
   if(state.offline)return {error:{message:'Failed to fetch'}};
   if(name==='claim_training_invitation')return {data:'g'};
   if(state.operations.has(op_id))return {data:null};

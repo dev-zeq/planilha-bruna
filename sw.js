@@ -1,6 +1,6 @@
-const CACHE='treinos-shell-v2.0.1';
+const CACHE='treinos-shell-v2.1.0';
 const SDK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.81.1/dist/umd/supabase.js';
-const ASSETS=['./','./index.html','./styles.css','./app.js','./core.mjs','./manifest.webmanifest','./icon.svg',SDK];
+const ASSETS=['./','./index.html','./styles.css','./app.js','./core.mjs','./strava-client.mjs','./icon-512.png','./manifest.webmanifest','./icon.svg',SDK];
 const urls=ASSETS.map(p=>new URL(p,self.registration.scope).href);
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(urls.map(url=>new Request(url,{cache:'reload'})))));

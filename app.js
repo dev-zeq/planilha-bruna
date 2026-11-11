@@ -1,9 +1,11 @@
+import {setupStrava,takeStravaReturn} from './strava-client.mjs';
 import {LEGACY_KEY, escapeHTML as esc, isoLocal, monday, durationSeconds, durationText, paceText, numberOrNull, validateLegacy, legacyOperations, legacyUUID, projectSnapshot} from './core.mjs';
 
+const stravaReturn=takeStravaReturn();
 const $=id=>document.getElementById(id);
 const URL_API='https://hzcqlygvzxxnvpywzppp.supabase.co';
 const PUBLIC_KEY='sb_publishable_CVtGBZ41EnVTtVsD4yu-Ug_AdiK2J-l';
-let client,user=null,group=null,members=[],base={sessions:[],results:[]},week=monday(),filter='all',generation=0,refreshPromise=null,authMode='login',formVersion=0,resultVersion=0;
+let stravaUI=null;let client,user=null,group=null,members=[],base={sessions:[],results:[]},week=monday(),filter='all',generation=0,refreshPromise=null,authMode='login',formVersion=0,resultVersion=0;
 const snapshotKey=uid=>`treinos:cloud:v2:${uid}`;
 const queueKey=uid=>`treinos:queue:v2:${uid}`;
 const read=(key,fallback)=>{const raw=localStorage.getItem(key);return raw===null?fallback:JSON.parse(raw);};
@@ -50,7 +52,7 @@ function render(){
    const my=v.results.find(r=>r.session_id===s.id&&r.user_id===user.id),canComplete=!s.target_user_ids.length||s.target_user_ids.includes(user.id);
    return `<article class="entry ${s.state==='open'?'open':'plan'}"><div class="head"><strong>${esc(s.title)}</strong><span class="tag">${s.pending?'Pendente de envio':s.state==='open'?'A definir':'Planejado'}</span></div><p class="who">${esc(s.period)}${s.planned_km!=null?' · '+esc(s.planned_km)+' km planejados':''}</p><p>${esc(s.description)}</p><div class="results">${targets.map(m=>{
     const r=v.results.find(r=>r.session_id===s.id&&r.user_id===m.user_id);
-    return `<p><b>${esc(m.display_name)}:</b> ${r?resultLabels[r.status]:'Planejado'}${r?.actual_km!=null?' · '+esc(r.actual_km)+' km':''}${r?.duration_seconds!=null?' · '+durationText(r.duration_seconds)+' · '+paceText(r.actual_km,r.duration_seconds):''}${r?.pending?' · envio pendente':''}${r?.notes?'<br>'+esc(r.notes):''}</p>`;
+    return `<p><b>${esc(m.display_name)}:</b> ${r?resultLabels[r.status]:'Planejado'}${r?.actual_km!=null?' · '+esc(r.actual_km)+' km':''}${r?.duration_seconds!=null?' · '+durationText(r.duration_seconds)+' · '+paceText(r.actual_km,r.duration_seconds):''}${r?.source==='strava'?' · Strava (privado)':''}${r?.pending?' · envio pendente':''}${r?.notes?'<br>'+esc(r.notes):''}</p>`;
    }).join('')}</div><div class="actions">${canComplete?`<button data-result="${s.id}">${my?.status==='done'?'Meu resultado':'Concluir treino'}</button>`:''}<button class="secondary" data-edit="${s.id}">Editar</button><button class="danger" data-delete="${s.id}">Excluir</button></div></article>`;
   }).join(''):'<p class="muted">Nenhum treino registrado</p>'}</section>`;
  }).join('');
@@ -116,7 +118,7 @@ function showPanel(name){for(const id of ['auth','access','app'])$(id+'Panel').h
 async function handleSession(session){
  const uid=session?.user?.id;
  if(uid===user?.id&&group)return;
- generation++;const previousRefresh=refreshPromise;user=session?.user||null;group=null;members=[];base={sessions:[],results:[]};filter='all';
+ generation++;stravaUI?.reset();const previousRefresh=refreshPromise;user=session?.user||null;group=null;members=[];base={sessions:[],results:[]};filter='all';
  $('days').innerHTML='';$('queuePanel').innerHTML='';$('email').value='';$('password').value='';
  if(!user){showPanel('auth');message('Entre para acessar a agenda compartilhada.');return;}
  const gen=generation;
@@ -130,7 +132,7 @@ async function handleSession(session){
  const membership=check(await client.from('training_members').select('*').eq('user_id',uid).order('created_at').limit(1));
  if(gen!==generation)return;
  if(!membership.length){localStorage.removeItem(snapshotKey(uid));showPanel('access');message('E-mail sem autorização para o grupo ou confirmação pendente.');return;}
- if(previousRefresh)await previousRefresh.catch(()=>{});if(gen!==generation)return;group=membership[0].group_id;showPanel('app');await refresh(true);
+ if(previousRefresh)await previousRefresh.catch(()=>{});if(gen!==generation)return;group=membership[0].group_id;showPanel('app');await refresh(true);await stravaUI?.load();
 }
 function setAuthMode(mode){authMode=mode;$('authTitle').textContent=({login:'Sua agenda de treinos',signup:'Criar minha conta',recover:'Recuperar senha',password:'Definir nova senha'})[mode];$('authSubmit').textContent=({login:'Entrar',signup:'Cadastrar',recover:'Enviar link de recuperação',password:'Salvar nova senha'})[mode];$('passwordLabel').hidden=mode==='recover';$('password').required=mode!=='recover';$('password').autocomplete=mode==='login'?'current-password':'new-password';$('email').parentElement.hidden=mode==='password';$('email').required=mode!=='password';$('signup').hidden=mode!=='login';$('recover').hidden=mode!=='login';$('backLogin').hidden=mode==='login'||mode==='password';$('authMessage').textContent='';}
 function openSession(id){
@@ -192,6 +194,7 @@ try{
  const needsPassword=['recovery','invite'].includes(incoming.get('type'));
  if(needsPassword)setAuthMode('password');
  client=window.supabase.createClient(URL_API,PUBLIC_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:(url,options={})=>fetch(url,{...options,signal:options.signal||AbortSignal.timeout(15000)})}});
+ stravaUI=setupStrava({client,getUser:()=>user,getSnapshot:view,refresh:()=>refresh(true),oauthReturn:stravaReturn});
  client.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(event==='PASSWORD_RECOVERY'){generation++;user=session.user;group=null;showPanel('auth');setAuthMode('password');message('Defina sua nova senha.');}else if(authMode!=='password')void guarded(()=>handleSession(session));},0);});
  const {data,error}=await client.auth.getSession();if(error)throw error;
  if(needsPassword&&data.session){user=data.session.user;showPanel('auth');setAuthMode('password');message('Defina sua nova senha.');}else {setAuthMode('login');await handleSession(data.session);if(incoming.get('error'))message('Este link de acesso expirou ou já foi utilizado. Solicite um novo link em Esqueci a senha.',true);}

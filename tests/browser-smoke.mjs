@@ -38,6 +38,7 @@ try {
  const dom=await page('Runtime.evaluate',{expression:'document.documentElement.outerHTML',returnByValue:true});await fs.writeFile('test-results/browser-dom.html',dom.result.value);
  const mobile=await page('Page.captureScreenshot',{format:'png'});await fs.writeFile('test-results/mobile.png',Buffer.from(mobile.data,'base64'));
  const overflow=await page('Runtime.evaluate',{expression:'document.documentElement.scrollWidth>innerWidth+1',returnByValue:true});
+ if(overflow.result.value){const detail=await page('Runtime.evaluate',{expression:"Array.from(document.querySelectorAll('body *')).filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>({tag:e.tagName,id:e.id,right:e.getBoundingClientRect().right})).slice(0,20)",returnByValue:true});console.log('Overflow elements:',detail.result.value);}
  await page('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
  const desktop=await page('Page.captureScreenshot',{format:'png'});await fs.writeFile('test-results/desktop.png',Buffer.from(desktop.data,'base64'));
  console.log(result||'FAIL: browser scenario never finished');
