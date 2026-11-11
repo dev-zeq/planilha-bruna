@@ -148,3 +148,20 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Estado remoto revisado: dois novos registros de migração, três autorizações privadas, zero usuários reais, zero treinos migrados. Nenhum dado do navegador acessado/apagado por esta execução.
 - Commits relevantes: `4e0c481` banco; `54e19a4` UI; `17ad0e6` harness; `511af6b` correções de sincronização. Esta atualização de documentação está em commit posterior, sem alteração do código testado.
 - Nenhuma dependência de credenciais de outro projeto. SMTP a configurar exclusivamente neste projeto. Não adicionar os atletas à organização Supabase como administradores.
+
+
+## 2026-11-11 — Etapa 4: domínio de e-mail no Resend
+
+- Usuário confirmou conta Resend existente e autorizou usar paceplus.app.
+- Domínio paceplus.app adicionado de fato no Resend (região São Paulo); recebimento de e-mails desativado, somente envio preparado. Não alterado o domínio já existente na conta.
+- Cadastro atual: https://resend.com/domains/add/654d6921-8fdb-4c41-a77b-6d860211467b.
+- Verificação DNS ainda não concluída. O Resend apresentou estes registros, a confirmar novamente na interface antes de inserir:
+  - TXT resend._domainkey: valor DKIM público disponível no cadastro do domínio.
+  - CNAME rsend → rsend-sae1.forge.rmta.net.
+  - CNAME send → send.forge.rmta.net.
+- Resend aponta Porkbun como provedor DNS. Aberta a página do domínio no Porkbun; bloqueada por login do usuário. Nenhum registro DNS foi modificado.
+- Formulário SMTP do projeto planilha-treinos preparado, mas NÃO salvo: remetente treinos@paceplus.app, nome Treinos | Pace Plus, smtp.resend.com, porta 465, usuário resend. Senha/chave ainda não configurada; serviço customizado não ativado no servidor.
+- Documentação oficial conferida: https://resend.com/docs/send-with-supabase-smtp.
+- Nenhuma chave Resend criada, copiada, publicada ou reutilizada de outro projeto. Antes de configurar, criar credencial exclusiva com permissão mínima de envio para este domínio.
+- Pendência imediata: usuário entrar no Porkbun na aba aberta e avisar. Depois adicionar/verificar os registros DNS, configurar a credencial SMTP diretamente no painel, salvar e validar entrega/cadastro/login.
+- main e PR continuam no estado anterior: implantação nova ainda pendente. Esta etapa altera apenas documentação em progress.md.
