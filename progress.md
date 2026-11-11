@@ -262,3 +262,16 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Interface publicada atualizada: 8 treinos visíveis, Ezequiel com resultados e Bruna planejada. O total de pendências com filtro Todos conta cada destinatário individualmente.
 - Nenhum dado local apagado. Sem nova migração de schema ou mudança de código nesta etapa.
 - Próximo passo: preparar OAuth Strava exclusivo deste aplicativo, sem reutilizar segredos do Pace Plus; autorizações individuais e importação privada por atleta.
+
+
+## 2026-11-11 — Etapa 11: preparação do cadastro Strava
+
+- Consultadas fontes oficiais OAuth, cadastro, limites, API Agreement, secrets Supabase e Vault. Decisões/requisitos documentados em docs/strava.md.
+- Verificada sessão Strava aberta da Bruna (assinante); página Minha aplicação API apresenta criação, sem aplicação existente. Não houve leitura/cópia ou alteração de credenciais do Pace Plus.
+- Formulário preparado: Treinos Pace Plus, Treinamento, site https://treinos.paceplus.app, callback treinos.paceplus.app, descrição de agenda e importação privada individual.
+- Não marcado “Li e concordo com o Acordo da API do Strava” nem clicado Criar: o cadastro exige aceite contratual pelo usuário. Aba mantida para esse próximo passo.
+- Projeto dedicado ainda sem Edge Functions e sem novas tabelas Strava. Integração não implementada/conectada nesta etapa; nenhum segredo/token coletado.
+- Requisito identificado para o código: dados recebidos da API visíveis somente ao próprio atleta. O modelo atual de resultados compartilhados precisará diferenciar a origem antes de receber dados Strava. Dados manuais/backup existentes permanecem iguais.
+- Renato continua como membro, sem atividades antigas migradas para ele; conexão Strava dele será feita posteriormente, conforme esclarecimento do usuário.
+- Próximo passo: usuário concluir cadastro/aceite na aba preparada; então implementar OAuth no servidor, armazenamento protegido, importação individual e testes, conferindo capacidade do aplicativo.
+- Arquivos: docs/strava.md e progress.md. Branch feat/strava-individual-sync reservada para o desenvolvimento; nenhuma integração foi anunciada como pronta.
