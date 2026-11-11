@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Treinos | Ezequiel & Bruna",
+  "name": "Treinos | Agenda compartilhada",
   "short_name": "Treinos",
-  "description": "Agenda semanal de corrida de Ezequiel e Bruna",
+  "description": "Agenda de treinos de Ezequiel, Bruna e Renato Cirino",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

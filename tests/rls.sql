@@ -60,6 +60,25 @@ do $$ begin
  if exists(select 1 from public.training_sessions) or exists(select 1 from public.training_results) then raise exception 'FAIL outsider isolation'; end if;
 end $$;
 reset role;
+insert into auth.users(id,email) values('10000000-0000-4000-8000-000000000005','invited@example.invalid');
+insert into training_private.authorizations(email,display_name,group_id) values('invited@example.invalid','Invited','20000000-0000-4000-8000-000000000001');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000005',true);
+do $$ begin
+ if public.claim_training_invitation() is not null then raise exception 'FAIL unconfirmed invitation'; end if;
+ begin perform * from training_private.authorizations; raise exception 'FAIL private authorizations visible'; exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+update auth.users set email_confirmed_at=now() where id='10000000-0000-4000-8000-000000000005';
+set local role authenticated;
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000005',true);
+do $$ begin
+ if public.claim_training_invitation()<>'20000000-0000-4000-8000-000000000001'::uuid then raise exception 'FAIL confirmed invitation'; end if;
+ if (select count(*) from public.training_members where user_id=auth.uid())<>1 then raise exception 'FAIL authorized membership'; end if;
+ perform public.claim_training_invitation();
+ if (select count(*) from public.training_members where user_id=auth.uid())<>1 then raise exception 'FAIL duplicate invitation'; end if;
+end $$;
+reset role;
 delete from public.training_members where user_id='10000000-0000-4000-8000-000000000001';
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
