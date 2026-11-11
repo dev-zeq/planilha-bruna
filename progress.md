@@ -499,3 +499,12 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - **Segurança/correção:** não associar automaticamente sem confirmação, nem misturar manhã/noite, diferentes atletas ou atividades já vinculadas. Tratar falta de correspondência ou múltiplas sugestões com seleção manual. Evitar duplicidade e respeitar limites de retenção e privacidade Strava.
 - **Critérios de aceite:** 1) corrida única recém-sincronizada sugerida para o treino correto do dia; 2) três gravações consecutivas sugeridas como conjunto revisável; 3) treinos diferentes no mesmo dia não são fundidos sem escolha; 4) resultado não muda até confirmar; 5) recarga mantém vínculo único; 6) resultados permanecem separados por atleta.
 - **Estado:** requisito aprovado pelo responsável, **não implementado nem testado** nesta etapa. Próximo passo: inspecionar UI/lógica Strava atuais, implementar em branch/PR, executar testes e publicar apenas após validação; registrar links e evidências aqui.
+
+
+### Decisão de interface — sugestões Strava (11/11/2026)
+
+- **Sem nova aba:** manter Semana, Ranking, Strava e Conta. Adicionar seção de sugestões de vínculo na própria aba Strava e atalho contextual «Vincular Strava» no treino da aba Semana.
+- **Destaque visual:** card da sincronização automática/sugestão de atividade em laranja inspirado na identidade visual do Strava, acima da lista de atividades, com contraste acessível; demais cards permanecem neutros para diferenciar claramente a ação sugerida.
+- **Estado do card:** deixar nítido se está aguardando nova atividade, se existe sugestão para revisar ou se o vínculo foi confirmado; nunca indicar vínculo concluído apenas porque houve importação.
+- **Ação:** mostrar proposta automática com data/horário/distância, permitir revisar múltiplas partes (aquecimento, treino principal, desaquecimento) e confirmar explicitamente. Não usar dados fictícios no aplicativo real.
+- **Status:** decisão de produto registrada; **layout e comportamento ainda não implementados nem testados**.
