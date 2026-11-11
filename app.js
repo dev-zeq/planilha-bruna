@@ -14,6 +14,7 @@ function errorText(error){
  const m=error?.message||String(error);
  if(/Invalid login credentials/i.test(m))return 'E-mail ou senha incorretos.';
  if(/Email not confirmed/i.test(m))return 'Confirme seu e-mail antes de entrar.';
+ if(/email address not authorized|email_provider_disabled|sending confirmation email/i.test(m))return 'O envio de confirmação ainda precisa ser configurado pelo responsável do aplicativo. Seus dados antigos continuam preservados.';
  if(/rate limit/i.test(m))return 'Limite de tentativas atingido. Aguarde alguns minutos.';
  if(/CONFLICT/.test(m))return 'Há uma alteração mais recente. Exporte as pendências, descarte a operação em conflito e refaça a edição com os dados atuais.';
  if(/fetch|network|offline/i.test(m))return 'Sem conexão com o servidor. Seus dados locais e pendências foram preservados.';
@@ -55,7 +56,7 @@ function render(){
  }).join('');
  $('queuePanel').hidden=!q.length;
  $('queuePanel').innerHTML=`<strong>${q.length} operação(ões) pendente(s) neste aparelho</strong><p>Os dados abaixo ainda precisam ser confirmados pelo servidor.</p>${q.some(o=>o.error)?'<p>Uma operação parou a fila. Exporte as pendências antes de descartá-la. Depois revise o treino atualizado.</p>':''}<ul>${q.filter(o=>o.error).map(o=>`<li>${esc(o.body.data.title||o.body.kind)}: ${esc(o.error)} <button class="danger" data-discard="${o.id}">Descartar esta operação</button></li>`).join('')}</ul><button id="sendPending">Tentar enviar</button><button class="secondary" id="backupPending">Exportar pendências</button>`;
- if($('sendPending'))$('sendPending').onclick=()=>guarded(()=>refresh(true),$('sendPending'));
+ if($('sendPending'))$('sendPending').onclick=()=>guarded(async()=>{await editQueue(user.id,q=>q.map(({error,...op})=>op));await refresh(true);},$('sendPending'));
  if($('backupPending'))$('backupPending').onclick=exportCloud;
 }
 async function enqueueMany(bodies){
@@ -115,7 +116,7 @@ function showPanel(name){for(const id of ['auth','access','app'])$(id+'Panel').h
 async function handleSession(session){
  const uid=session?.user?.id;
  if(uid===user?.id&&group)return;
- generation++;user=session?.user||null;group=null;members=[];base={sessions:[],results:[]};filter='all';
+ generation++;const previousRefresh=refreshPromise;user=session?.user||null;group=null;members=[];base={sessions:[],results:[]};filter='all';
  $('days').innerHTML='';$('queuePanel').innerHTML='';$('email').value='';$('password').value='';
  if(!user){showPanel('auth');message('Entre para acessar a agenda compartilhada.');return;}
  const gen=generation;
@@ -129,7 +130,7 @@ async function handleSession(session){
  const membership=check(await client.from('training_members').select('*').eq('user_id',uid).order('created_at').limit(1));
  if(gen!==generation)return;
  if(!membership.length){localStorage.removeItem(snapshotKey(uid));showPanel('access');message('E-mail sem autorização para o grupo ou confirmação pendente.');return;}
- group=membership[0].group_id;showPanel('app');await refresh(true);
+ if(previousRefresh)await previousRefresh.catch(()=>{});if(gen!==generation)return;group=membership[0].group_id;showPanel('app');await refresh(true);
 }
 function setAuthMode(mode){authMode=mode;$('authTitle').textContent=({login:'Sua agenda de treinos',signup:'Criar minha conta',recover:'Recuperar senha',password:'Definir nova senha'})[mode];$('authSubmit').textContent=({login:'Entrar',signup:'Cadastrar',recover:'Enviar link de recuperação',password:'Salvar nova senha'})[mode];$('passwordLabel').hidden=mode==='recover';$('password').required=mode!=='recover';$('password').autocomplete=mode==='login'?'current-password':'new-password';$('email').parentElement.hidden=mode==='password';$('email').required=mode!=='password';$('signup').hidden=mode!=='login';$('recover').hidden=mode!=='login';$('backLogin').hidden=mode==='login'||mode==='password';$('authMessage').textContent='';}
 function openSession(id){
@@ -182,7 +183,7 @@ window.addEventListener('storage',e=>{if(user&&e.key===queueKey(user.id)){render
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void guarded(()=>refresh(true));});setInterval(()=>{if(!document.hidden&&navigator.onLine)void guarded(()=>refresh(true));},20000);
 
 // Keep shell versions coherent: an installed worker activates only after a user action.
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>{const offer=()=>{if(reg.waiting){$('updateApp').hidden=false;$('updateApp').onclick=()=>{if(user&&queue(user.id).length&&!confirm('Atualizar agora? Suas pendências serão preservadas.'))return;reg.waiting.postMessage({type:'ACTIVATE'});};}};offer();reg.addEventListener('updatefound',()=>reg.installing?.addEventListener('statechange',offer));navigator.serviceWorker.addEventListener('controllerchange',()=>location.reload());}).catch(()=>message('Não foi possível preparar o uso offline. A agenda continua disponível com internet.',true));}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>{const offer=()=>{if(reg.waiting){$('updateApp').hidden=false;$('updateApp').onclick=()=>{if(user&&queue(user.id).length&&!confirm('Atualizar agora? Suas pendências serão preservadas.'))return;reg.waiting.postMessage({type:'ACTIVATE'});};}};offer();reg.addEventListener('updatefound',()=>reg.installing?.addEventListener('statechange',offer));navigator.serviceWorker.addEventListener('controllerchange',()=>location.reload());}).catch(()=>{$('pwaMessage').textContent='Não foi possível preparar o uso offline. A agenda continua disponível com internet.';});}
 let installPrompt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;$('installBtn').hidden=false;});$('installBtn').onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;$('installBtn').hidden=true;}};
 
 try{
