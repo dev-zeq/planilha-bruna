@@ -5,6 +5,7 @@ const submit=id=>$(id).dispatchEvent(new Event('submit',{bubbles:true,cancelable
 const login=async email=>{$('email').value=email;$('password').value='test-only-password';submit('authForm');await wait(()=>!$('appPanel').hidden);await wait(()=>document.querySelectorAll('[data-filter]').length===4);};
 const statusSynced=()=>$('statusMessage').textContent.includes('Todas as alterações');
 try{
+ if(state.invitation){await wait(()=>$('authTitle').textContent==='Definir nova senha');assert($('appPanel').hidden,'invite waits for password');$('password').value='test-only-new-password';submit('authForm');await wait(()=>!$('appPanel').hidden);assert(state.passwordSet,'invitation password saved');await wait(()=>document.querySelectorAll('[data-filter]').length===4);$('logout').click();await wait(()=>!$('authPanel').hidden);}
  await wait(()=>$('statusMessage').textContent.includes('Entre para'));
  await login('a@example.invalid');await wait(statusSynced);
  $('new').click();assert($('sessionDialog').open,'new dialog');$('titleInput').value='<img src=x onerror=alert(1)>';$('trainingDate').value=new Date().toISOString().slice(0,10);$('plannedInput').value='10';submit('sessionForm');
@@ -23,5 +24,5 @@ try{
  document.querySelector('[data-edit]').click();state.sessions[0].version++;$('titleInput').value='Stale edit';submit('sessionForm');await wait(()=>Boolean(document.querySelector('[data-discard]')));assert(state.sessions[0].title==='B updated','conflict preserves remote edit');
  document.querySelector('[data-discard]').click();await wait(()=>$('queuePanel').hidden);await wait(statusSynced);
  document.querySelector('[data-delete]').click();await wait(()=>state.sessions[0].deleted_at);await wait(statusSynced);assert(document.querySelectorAll('.entry').length===1,'deleted session hidden');
- const result=document.createElement('pre');result.id='smoke-result';result.textContent='PASS: login A/B/C, shared create/edit/delete, own completion, escaped HTML, persisted network failure, retry and CAS conflict';document.body.append(result);
+ const result=document.createElement('pre');result.id='smoke-result';result.textContent='PASS: invite password setup, login A/B/C, shared create/edit/delete, own completion, escaped HTML, persisted network failure, retry and CAS conflict';document.body.append(result);
 }catch(error){const result=document.createElement('pre');result.id='smoke-result';result.textContent='FAIL: '+error.stack+'; STATUS: '+$('statusMessage').textContent;document.body.append(result);}

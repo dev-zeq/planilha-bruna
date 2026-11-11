@@ -32,7 +32,7 @@ try {
  const page=(method,params)=>send(method,params,sessionId);
  await page('Page.enable');await page('Runtime.enable');
  await page('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
- await page('Page.navigate',{url:`http://127.0.0.1:${server.address().port}/`});
+ await page('Page.navigate',{url:`http://127.0.0.1:${server.address().port}/#type=invite&access_token=test-invite`});
  let result;for(let i=0;i<250;i++){const value=await page('Runtime.evaluate',{expression:"document.querySelector('#smoke-result')?.textContent",returnByValue:true});result=value.result.value;if(result)break;await new Promise(r=>setTimeout(r,100));}
  await fs.mkdir('test-results',{recursive:true});
  const dom=await page('Runtime.evaluate',{expression:'document.documentElement.outerHTML',returnByValue:true});await fs.writeFile('test-results/browser-dom.html',dom.result.value);

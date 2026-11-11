@@ -179,3 +179,18 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Conferida a criação de chave de API: o formulário permite Sending access; a lista de escopo ainda não mostra paceplus.app enquanto a verificação está pendente. Formulário cancelado; nenhuma chave criada, nenhum segredo lido.
 - Próximo passo concreto: após liberação, criar Treinos-Supabase-SMTP com Sending access restrito a paceplus.app e registrar apenas no SMTP do Supabase planilha-treinos. A criação de credencial permanente no navegador exige confirmação no momento da ação; aguardando confirmação do usuário.
 - SMTP continua preparado e não salvo; nenhum teste de e-mail enviado. Sem alterações de código ou de esquema nesta etapa. progress.md atualizado no commit desta seção.
+
+
+## 2026-11-11 — Etapa 6: Resend e SMTP ativos
+
+- Domínio paceplus.app global Verified no Resend; DKIM e os dois CNAMEs Verified. Região São Paulo. Recebimento continua desativado.
+- Após confirmação explícita do usuário, criada chave exclusiva Treinos-Supabase-SMTP com Sending access restrito a paceplus.app. Nenhuma chave preexistente reutilizada. Segredo não incluído em arquivos, commits, mensagens ou documentação.
+- Chave transferida pela interface entre os painéis e salva no SMTP exclusivamente de hzcqlygvzxxnvpywzppp: treinos@paceplus.app, Treinos | Pace Plus, smtp.resend.com:465, usuário resend. Toast confirmado: Successfully updated settings; senha armazenada oculta.
+- O primeiro método de copiar pela acessibilidade não integrou a área de transferência virtual; resolvido pelo botão Copy via automação DOM documentada. Nenhum segredo impresso.
+- Ajustado o fluxo de convite: capturar type=invite/recovery antes de inicializar o SDK e abrir definição de senha antes de reivindicar o grupo. Incluído teste de navegador com hash consumido pelo SDK simulado.
+- Arquivos: app.js, index.html, sw.js, package.json, tests/mock-supabase.js, tests/browser-scenarios.js, tests/browser-smoke.mjs, progress.md.
+- Versão do shell/app 2.0.1. Unitários (7) e sintaxe passaram localmente. CI do fluxo de convite ainda a executar.
+- Próximo passo: validar CI, publicar a versão, enviar convites individuais e verificar entrega. Cada atleta definirá sua própria senha; login real nos três aparelhos continua pendente.
+
+
+

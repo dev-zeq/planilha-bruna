@@ -3,6 +3,7 @@
  const users=[{id:'a',email:'a@example.invalid'},{id:'b',email:'b@example.invalid'},{id:'c',email:'c@example.invalid'}];
  const members=users.map((u,i)=>({user_id:u.id,group_id:'g',display_name:['Ezequiel','Bruna','Renato Cirino'][i]}));
  const state={sessions:[],results:[],operations:new Set(),user:null,callback:()=>{},offline:false};
+ state.invitation=new URLSearchParams(location.hash.slice(1)).get('type')==='invite';if(state.invitation)state.user=users[0];
  const tables={training_members:members,training_sessions:state.sessions,training_results:state.results};
  window.testBackend=state;window.confirm=()=>true;
  const query=table=>{
@@ -29,7 +30,7 @@
   onAuthStateChange(callback){state.callback=callback;},
   async signInWithPassword({email}){state.user=users.find(u=>u.email===email);return {data:{session:{user:state.user}}};},
   async signOut(){state.user=null;state.callback('SIGNED_OUT',null);return {};},
-  async resetPasswordForEmail(){return {};},async signUp(){return {data:{session:null}};},async updateUser(){return {};}
+  async resetPasswordForEmail(){return {};},async signUp(){return {data:{session:null}};},async updateUser(){state.passwordSet=true;return {};}
  }};
- window.supabase={createClient:()=>client};
+ window.supabase={createClient:()=>{history.replaceState(null,'',location.pathname);return client;}};
 })();

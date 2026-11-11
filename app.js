@@ -188,9 +188,11 @@ let installPrompt=null;window.addEventListener('beforeinstallprompt',e=>{e.preve
 
 try{
  if(!window.supabase)throw Error('Não foi possível carregar o serviço de login. Verifique a internet e recarregue.');
+ const incoming=new URLSearchParams(location.hash.slice(1));
+ const needsPassword=['recovery','invite'].includes(incoming.get('type'));
+ if(needsPassword)setAuthMode('password');
  client=window.supabase.createClient(URL_API,PUBLIC_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:(url,options={})=>fetch(url,{...options,signal:options.signal||AbortSignal.timeout(15000)})}});
- const recovery=new URLSearchParams(location.hash.slice(1)).get('type')==='recovery';
  client.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(event==='PASSWORD_RECOVERY'){generation++;user=session.user;group=null;showPanel('auth');setAuthMode('password');message('Defina sua nova senha.');}else if(authMode!=='password')void guarded(()=>handleSession(session));},0);});
  const {data,error}=await client.auth.getSession();if(error)throw error;
- if(recovery&&data.session){user=data.session.user;showPanel('auth');setAuthMode('password');message('Defina sua nova senha.');}else await handleSession(data.session);
-}catch(e){message(errorText(e),true);}
+ if(needsPassword&&data.session){user=data.session.user;showPanel('auth');setAuthMode('password');message('Defina sua nova senha.');}else {setAuthMode('login');await handleSession(data.session);if(incoming.get('error'))message('Este link de acesso expirou ou já foi utilizado. Solicite um novo link em Esqueci a senha.',true);}
+}catch(e){setAuthMode('login');message(errorText(e),true);}
