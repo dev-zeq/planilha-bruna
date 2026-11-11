@@ -508,3 +508,11 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - **Estado do card:** deixar nítido se está aguardando nova atividade, se existe sugestão para revisar ou se o vínculo foi confirmado; nunca indicar vínculo concluído apenas porque houve importação.
 - **Ação:** mostrar proposta automática com data/horário/distância, permitir revisar múltiplas partes (aquecimento, treino principal, desaquecimento) e confirmar explicitamente. Não usar dados fictícios no aplicativo real.
 - **Status:** decisão de produto registrada; **layout e comportamento ainda não implementados nem testados**.
+
+
+## 2026-11-11 — Etapa 28: sugestão Strava e card laranja (versão 2.6.2)
+
+- Branch `feat/strava-smart-suggestions`: card laranja na aba Strava, sem nova aba, com indicação do estado e botão para revisar sugestão.
+- Sugestão conservadora: atividades da mesma data e um único treino elegível sem resultado; agrupamento somente quando gravações forem próximas, sem misturar grupos separados por mais de 90 minutos. Ambiguidade exige seleção manual. Nenhum resultado é gravado sem confirmação no diálogo existente.
+- Preservadas seleção manual, acesso individual e vínculo de até dez gravações. Nenhuma migração de banco ou credencial alterada.
+- Status: implementação em branch; PR, CI, publicação e teste real em celulares devem ser registrados depois da confirmação, sem antecipar aprovação.
