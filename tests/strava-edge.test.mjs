@@ -17,7 +17,7 @@ function fixture(options={}){
 test('Strava auth and CORS reject outside callers before any token access',async()=>{
  const f=fixture();assert.equal((await f.request({action:'sync'},{Authorization:''})).status,401);assert.equal((await f.request({action:'sync'},{Origin:'https://attacker.invalid'})).status,403);assert.equal((await f.request({}, {},'GET')).status,405);assert.equal((await fixture({outsider:true}).request({action:'status'})).status,403);assert.equal(f.calls.length,0);assert.equal(f.network.length,0);
 });
-test('Strava status safe while credentials are not configured',async()=>{const f=fixture({unconfigured:true});const r=await f.request({action:'status'});assert.deepEqual(await r.json(),{configured:false,connection:null});assert.equal((await f.request({action:'start'})).status,503);assert.equal(f.network.length,0);});
+test('Strava status safe while credentials are not configured',async()=>{const f=fixture({unconfigured:true});const r=await f.request({action:'status'});assert.deepEqual(await r.json(),{configured:false,connection:null,automatic:null,can_enable_auto:false});assert.equal((await f.request({action:'start'})).status,503);assert.equal(f.network.length,0);});
 test('OAuth start persists only hash tied to authenticated user and fixed callback',async()=>{
  const f=fixture();const body=await (await f.request({action:'start',user_id:'attacker'})).json();const u=new URL(body.url);assert.equal(u.searchParams.get('redirect_uri'),APP_ORIGIN+'/');assert.equal(u.searchParams.get('scope'),'read,activity:read_all');assert.equal(f.calls[0].args.p_user,uid);assert.equal(f.calls[0].args.p_hash,await sha256(body.state));assert.notEqual(f.calls[0].args.p_hash,body.state);
 });
