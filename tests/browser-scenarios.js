@@ -14,7 +14,7 @@ try{
  document.querySelector('[data-result]').click();$('actualInput').value='10';$('durationInput').value='00:40:00';submit('resultForm');await wait(()=>state.results.length===1);await wait(statusSynced);
  assert(state.results[0].user_id==='a','result identity A');
  // Private Strava panel and explicit result link use the current athlete and version.
- document.querySelector('[data-tab="strava"]').click();assert(!$('tabStrava').hidden&&$('tabWeek').hidden,'Strava tab shown');await wait(()=>$('stravaActivities').textContent.includes('Corrida privada A'));
+ document.querySelector('[data-tab="strava"]').click();assert(!$('tabStrava').hidden&&$('tabWeek').hidden,'Strava tab shown');await wait(()=>$('stravaActivities').textContent.includes('Corrida privada A'));assert($('stravaActivities').textContent.includes('Gravado com Garmin Forerunner 255'),'activity credits its recording device');
  $('stravaSync').click();await wait(()=>$('stravaMessage').textContent.includes('verificada'));assert(state.stravaCalls.some(x=>x.action==='sync'&&x.uid==='a'),'sync tied to A');
  document.querySelector('[data-strava-link]').click();await wait(()=>$('stravaLinkDialog').open);$('stravaSession').value=state.sessions[0].id;submit('stravaLinkForm');await wait(()=>!$('stravaLinkDialog').open);await wait(()=>state.results[0].source==='strava');assert(state.stravaCalls.some(x=>x.action==='link'&&x.version===1&&x.uid==='a'),'explicit link uses own result CAS');
  // Warmup/main/cooldown sum to one result; a second athlete remains independent.
@@ -28,7 +28,7 @@ try{
  document.querySelector('[data-tab="week"]').click();
  $('logout').click();await wait(()=>!$('authPanel').hidden);await login('b@example.invalid');await wait(statusSynced);
  await wait(()=>$('stravaConnection').textContent.includes('Nenhuma conta'));assert(!$('stravaActivities').textContent.includes('Corrida privada A'),'B cannot see A private panel after account change');assert(!$('stravaConnect').disabled,'B can connect own Strava');assert(document.querySelectorAll('.entry').length===1,'B sees shared session');assert(state.results.length===1,'B not automatically complete');assert(document.querySelector('[data-result]').textContent==='Concluir treino','B owns independent action');
- document.querySelector('[data-filter="a"]').click();assert($('days').textContent.includes('16 km'),'B sees the Strava result A chose to share');assert(!document.querySelector('[data-result]'),'B cannot complete for A');document.querySelector('[data-filter="b"]').click();
+ document.querySelector('[data-filter="a"]').click();assert($('days').textContent.includes('16 km'),'B sees the Strava result A chose to share');assert($('days').textContent.includes('Garmin Forerunner 255'),'shared result credits the recording device');assert(!document.querySelector('[data-result]'),'B cannot complete for A');document.querySelector('[data-filter="b"]').click();
  document.querySelector('[data-edit]').click();$('titleInput').value='B updated';submit('sessionForm');await wait(()=>state.sessions[0].title==='B updated');await wait(statusSynced);
  $('logout').click();await wait(()=>!$('authPanel').hidden);await login('c@example.invalid');await wait(statusSynced);assert($('days').textContent.includes('B updated'),'C sees edit');assert(state.results.length===1,'C independent');
  // Simulated network failure: persist operation and send on retry.
