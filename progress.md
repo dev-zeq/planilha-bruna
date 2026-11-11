@@ -516,3 +516,11 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Sugestão conservadora: atividades da mesma data e um único treino elegível sem resultado; agrupamento somente quando gravações forem próximas, sem misturar grupos separados por mais de 90 minutos. Ambiguidade exige seleção manual. Nenhum resultado é gravado sem confirmação no diálogo existente.
 - Preservadas seleção manual, acesso individual e vínculo de até dez gravações. Nenhuma migração de banco ou credencial alterada.
 - Status: implementação em branch; PR, CI, publicação e teste real em celulares devem ser registrados depois da confirmação, sem antecipar aprovação.
+
+
+### Etapa 28 — PR e integração (11/11/2026)
+
+- PR [#11](https://github.com/dev-zeq/planilha-bruna/pull/11) integrado à `main` pelo commit [0edc371](https://github.com/dev-zeq/planilha-bruna/commit/0edc3719ea7a3e3b1d000247ed3753ce6bb98c5c).
+- Verificação do PR: GitHub Actions Tests run [43105605489](https://github.com/dev-zeq/planilha-bruna/actions/runs/43105605489), job `verify` com conclusão success: npm test/check, Deno check, SDK e navegador Chrome.
+- A primeira importação nova real via webhook e o teste de correspondência da sugestão no celular permanecem pendentes. A confirmação de publicação do GitHub Pages após o merge também precisa ser verificada separadamente.
+- Não houve migração de banco; resultados Strava existentes não foram alterados por esta entrega.
