@@ -200,3 +200,9 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 
 - Revisão do PWA: o primeiro service worker não força recarregamento; troca de controlador também não recarrega enquanto o usuário define a senha. Isso evita perder o contexto de convite/recuperação depois que o SDK consome o hash.
 - Arquivo app.js. A suíte de convite está no CI da etapa; sem novos segredos ou mudanças de banco.
+
+
+### Etapa 6 — teste de conflito determinístico
+
+- CI do convite: execução push 43065924272 passou; PR 43065935346 expôs teste instável, não sobrescrita no produto. A UI ordena por UUID, mas o fixture alterava sempre a primeira sessão criada; com UUIDs aleatórios, às vezes editava outro treino.
+- Teste corrigido para selecionar o ID exato nas ações de conflito/exclusão. Mantida a comparação de versões e ampliada a tolerância de espera de UI para runners mais lentos. Nova execução pendente antes da publicação.
