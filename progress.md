@@ -22,23 +22,42 @@ Atualizado em: 2026-11-11
 - [x] Quatro conjuntos de dados confirmados: grupos de treino, membros, treinos planejados e resultados individuais.
 - [x] Regras de acesso/RLS ativadas nas quatro tabelas, segundo verificação anterior.
 
-## Ponto atual — publicado em 11/11/2026
+## Ponto atual — referência para retomada (11/11/2026)
 
-**Versão 2.2.1 publicada e disponível em https://treinos.paceplus.app/. Cabeçalho com ícone do app e sem nomes pessoais, agenda compartilhada, Strava automático e agrupamento de atividades por resultado.**
+**Versão 2.2.1 publicada em https://treinos.paceplus.app/. Branch de produção: main.** Este resumo prevalece sobre estados intermediários do histórico abaixo.
 
-- PRs integrados: https://github.com/dev-zeq/planilha-bruna/pull/1 (agenda/Auth), https://github.com/dev-zeq/planilha-bruna/pull/2 (Strava) e https://github.com/dev-zeq/planilha-bruna/pull/3 (automação/agrupamento).
-- Publicação 2.2.0: merge f04e2af178925751a4812c8ada4357c5e03d3ebd; CI main 43082589035 e Pages 43082587991 aprovados. Webhook oficial cadastrado; Cron processou prova real de uma atividade existente em uma tentativa, HTTP 200, zero pendências e sem duplicações.
-- Publicação Strava: merge 1ab4d6c5567716391f7f717a4e1d92933f545960; Pages 43076731245 e testes main 43076732516 aprovados.
-- Strava real: Bruna 43 atividades, Ezequiel 36; vínculos individuais e agrupamento de três partes da manhã em um resultado próprio, repetição sem duplicações e persistência após recarga confirmadas. Dados da API privados por atleta; registros manuais compartilhados. Renato continua membro sem conexão própria.
-- Merge na main: https://github.com/dev-zeq/planilha-bruna/commit/7e478b780852a468e36c6d30c8525b40926b83ce.
-- Código validado antes do merge: eb8fae7809e823cb9350d19525e05a8f0b54b26d. CI push e PR verdes: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066178888 e https://github.com/dev-zeq/planilha-bruna/actions/runs/43066190957.
-- CI da main: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066359054; publicação GitHub Pages: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066361410. Ambos aprovados.
-- Resend com paceplus.app Verified e SMTP customizado salvo no Supabase dedicado. Confirmação de e-mail mantida.
-- As três contas já aceitaram o convite: e-mails confirmados, senhas definidas e sessões Auth iniciadas. Todos vinculados ao mesmo grupo. Usuário Ezequiel gerencia as três contas; nenhuma senha foi lida ou registrada.
-- Interface publicada carregou o login com SDK real e exibiu versão 2.0.1. Botão de atualização do PWA executado no navegador com sucesso.
-- **Validação real realizada:** criação, edição, conclusão individual e persistência após recarregar pela sessão Ezequiel no domínio publicado; resultado não concluiu Bruna/Renato. Permissões conferidas com os três UUIDs reais no Postgres, em transação revertida. Ainda pendentes: sessões simultâneas em aparelhos diferentes, login por senha após sair/recuperação real e offline específico em Safari/iPhone e Android.
-- **Migração realizada:** backup exportado/preservado; 8 treinos importados para Ezequiel e Bruna, 3 resultados (42,6 km) somente para Ezequiel. Bruna mantém resultados próprios; Renato continua no grupo, sem inclusão nesses treinos antigos. Reexecução idempotente confirmada.
-- **Próximo passo:** observar a próxima corrida nova enviada pelo relógio/Zepp/Garmin ao Strava (webhook externo real); validar nos celulares, recuperação e offline móvel. Webhook/worker já ativos e processo de fila validado com releitura real; Renato será conectado posteriormente. Agenda migrada e teste técnico removido. Guia no README.md e docs/strava.md.
+- **Agenda/Auth:** contas individuais de Ezequiel, Bruna e Renato no mesmo grupo; agenda compartilhada; resultados separados. Criar, editar, concluir individualmente, persistir e excluir foram verificados. Senhas definidas pelo responsável; nenhuma senha registrada aqui.
+- **Dados antigos:** backup exportado/preservado e importação idempotente de oito treinos para Ezequiel/Bruna, sem apagar armazenamento local. Renato permanece membro, sem inclusão automática nos treinos antigos.
+- **Strava:** Ezequiel e Bruna autorizados separadamente, com 36 e 43 atividades na última verificação. Dados da API visíveis apenas ao próprio atleta; resultados manuais compartilhados. Renato será conectado posteriormente, conforme solicitado.
+- **Automação:** assinatura oficial ativa; fila privada persistente, processamento em background e recuperação por Cron. Prova real com releitura de atividade existente concluída em uma tentativa, HTTP 200, sem timeout, duplicação ou pendências. A primeira corrida NOVA chegando pelo webhook externo ainda precisa ser observada.
+- **Gravações separadas:** até dez atividades próprias podem formar um resultado. Aquecimento/principal/desaquecimento somam metros e segundos em movimento; pace usa os totais. Confirmação e versão protegem o vínculo; não há escolha automática do treino. Agrupamento real de três partes da terça de manhã validado e persistente após recarga.
+- **Identidade visual:** ícone SVG do app ao lado de Treinos, sem emoji e sem os nomes sob o título. Identificação do usuário preservada na área autenticada. Cache PWA 2.2.1 e atualização pelo botão verificados em produção.
+- **Infraestrutura:** somente repositório dev-zeq/planilha-bruna e Supabase hzcqlygvzxxnvpywzppp. Edge Function strava v3; tokens cifrados no Vault; Client Secret nos secrets de servidor. Resend/SMTP com paceplus.app verificado. Aplicativo Pace Plus principal e demais projetos não alterados.
+- **Testes aprovados:** core/servidor; autenticação e acesso negado; OAuth; RLS com fixtures revertidas e UUIDs reais; webhook/challenge, deduplicação, claims/retries, revogação/época da conexão; agrupamento, pace ponderado, CAS e exclusão de componente; Chrome em largura móvel/desktop; conferência visual do cabeçalho e atualização da PWA.
+- **Últimas verificações de publicação:** [CI da main](https://github.com/dev-zeq/planilha-bruna/actions/runs/43085048427) e [GitHub Pages](https://github.com/dev-zeq/planilha-bruna/actions/runs/43085047997) aprovados no commit documental 998cd7f3d3ba740dd71573c3f10ec6f7295ef8f1.
+
+### Entregas e commits de referência
+
+| Entrega | PR / commit |
+| --- | --- |
+| Agenda compartilhada, Auth e PWA | [PR #1](https://github.com/dev-zeq/planilha-bruna/pull/1) · [7e478b7](https://github.com/dev-zeq/planilha-bruna/commit/7e478b780852a468e36c6d30c8525b40926b83ce) |
+| OAuth e sincronização individual Strava | [PR #2](https://github.com/dev-zeq/planilha-bruna/pull/2) · [1ab4d6c](https://github.com/dev-zeq/planilha-bruna/commit/1ab4d6c5567716391f7f717a4e1d92933f545960) |
+| Webhook automático e agrupamento de atividades | [PR #3](https://github.com/dev-zeq/planilha-bruna/pull/3) · [f04e2af](https://github.com/dev-zeq/planilha-bruna/commit/f04e2af178925751a4812c8ada4357c5e03d3ebd) |
+| Correção e validação real do teste da fila | [cb9b786](https://github.com/dev-zeq/planilha-bruna/commit/cb9b786bdbfb052d35abb19fb8b67100d03d5ce0) |
+| Cabeçalho profissional / versão 2.2.1 | [PR #4](https://github.com/dev-zeq/planilha-bruna/pull/4) · [8477518](https://github.com/dev-zeq/planilha-bruna/commit/847751858c25a86fd70ac4dbdf62929447fcbf89) |
+| Confirmação visual e documentação da publicação | [998cd7f](https://github.com/dev-zeq/planilha-bruna/commit/998cd7f3d3ba740dd71573c3f10ec6f7295ef8f1) |
+
+Histórico completo: https://github.com/dev-zeq/planilha-bruna/commits/main. Arquivos modificados, migrações Supabase, falhas corrigidas e resultados de cada etapa estão registrados abaixo. Procedimentos complementares: README.md e docs/strava.md.
+
+### Pendências verificáveis e próxima ação
+
+1. Observar uma corrida NOVA enviada por Amazfit/Zepp ou Garmin ao Strava e recebida pelo webhook. Não confundir esse teste com a releitura já validada pelo Cron.
+2. Conferir uso simultâneo em celulares/computador, offline real em Safari/iPhone e Android e recuperação de senha por e-mail. Não marcar esses testes como realizados apenas pelo CI.
+3. Conectar Renato quando o responsável estiver com ele e tiver os dados necessários. Conta/grupo já existem; não reutilizar autorização do casal.
+4. Revisar com o responsável um vínculo antigo de corrida do fim do dia em outra data da agenda. Não remapear automaticamente sem revisar a correspondência.
+5. Avisos de segurança já documentados: proteção de senhas vazadas desativada; metadados da extensão pg_net em public, com funções inspecionadas no schema net; tabelas privadas deliberadamente sem policies de cliente. Não alterar plano, credenciais ou outros projetos para resolver avisos sem necessidade.
+
+No celular: abrir o aplicativo, aplicar **Nova versão disponível — atualizar** se aparecer e conferir 2.2.1. Em **Meu Strava**, a importação é automática após a atividade chegar ao Strava; para juntar partes, marcar as gravações → **Vincular atividades selecionadas** → revisar os totais e o treino → confirmar.
 
 ## Checklist original (histórico; execução detalhada abaixo)
 
@@ -417,3 +436,12 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 
 - Publicação confirmada: CI main 43084749515 e Pages 43084749087 aprovados. Botão de atualização da PWA executado na produção; cabeçalho exibiu somente ícone SVG carregado e título Treinos. Conferência visual no navegador: alinhamento correto e nomes/emoji removidos. Cache 2.2.1 confirmado.
 - Etapa concluída; sem alterações no Supabase ou nos dados dos atletas. Pendências de integração/dispositivos continuam as registradas na etapa 20.
+
+
+## 2026-11-11 — Etapa 22: consolidação solicitada pelo responsável
+
+- Pedido: deixar todo o trabalho registrado em progress.md para retomada futura.
+- Revisado o arquivo atual da main antes da edição; preservado o histórico das etapas 1–21 e consolidado o ponto atual no início, removendo ambiguidades entre publicações antigas e a versão 2.2.1.
+- Acrescentados quadro de PRs/commits, escopo de infraestrutura, funcionalidades verificadas, testes, uso nos celulares, problemas corrigidos e lista explícita do que ainda falta verificar. Dados de atividades privadas, segredos e senhas não foram incluídos.
+- Confirmadas as execuções 43085048427 (Tests) e 43085047997 (Pages), ambas aprovadas no último commit documental anterior. Esta etapa modifica apenas progress.md; não altera código, Supabase ou dados dos atletas e não requer repetir testes funcionais.
+- Arquivo registrado em commit próprio na main. Próxima ação: validar a próxima corrida nova recebida automaticamente e então atualizar esta referência com a evidência; manter as demais pendências até confirmação real.
