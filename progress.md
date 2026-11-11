@@ -22,18 +22,20 @@ Atualizado em: 2026-11-11
 - [x] Quatro conjuntos de dados confirmados: grupos de treino, membros, treinos planejados e resultados individuais.
 - [x] Regras de acesso/RLS ativadas nas quatro tabelas, segundo verificação anterior.
 
-## Ponto atual — 11/11/2026
+## Ponto atual — publicado em 11/11/2026
 
-**Implementação real concluída na branch `feat/supabase-shared-training`, em validação antes de produção.**
+**Versão 2.0.1 publicada e disponível em https://treinos.paceplus.app/.**
 
-- PR draft: https://github.com/dev-zeq/planilha-bruna/pull/1.
-- Código verificado: `511af6bfe06ef889117371fa1e93e21b2b66d268` (com commits anteriores de banco/UI/testes).
-- CI final do código passou nas duas execuções (push e PR): https://github.com/dev-zeq/planilha-bruna/actions/runs/43061633392 e https://github.com/dev-zeq/planilha-bruna/actions/runs/43061623289.
-- Banco dedicado atualizado e três e-mails autorizados, sem criação de senhas ou envio de mensagens.
-- **Bloqueio:** escolher/configurar SMTP para confirmar os e-mails e recuperar senhas dos três atletas. O SMTP padrão do Supabase não atende usuários externos à equipe administrativa. Confirmação continua habilitada.
-- **main ainda não alterada:** o domínio continua com a versão local anterior. Não afirmar que a nova sincronização já está disponível na raiz publicada.
-- **Faltam testes reais:** cadastro, entrega de e-mail, login e recuperação nas três contas; instalação/atualização offline em Safari/iPhone e Android; importação confirmada dos dados dos aparelhos.
-- **Próximo passo:** configurar SMTP com o usuário, validar os três acessos, promover/integrar PR e testar a versão publicada. Guia detalhado em README.md desta branch.
+- PR integrado: https://github.com/dev-zeq/planilha-bruna/pull/1.
+- Merge na main: https://github.com/dev-zeq/planilha-bruna/commit/7e478b780852a468e36c6d30c8525b40926b83ce.
+- Código validado antes do merge: eb8fae7809e823cb9350d19525e05a8f0b54b26d. CI push e PR verdes: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066178888 e https://github.com/dev-zeq/planilha-bruna/actions/runs/43066190957.
+- CI da main: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066359054; publicação GitHub Pages: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066361410. Ambos aprovados.
+- Resend com paceplus.app Verified e SMTP customizado salvo no Supabase dedicado. Confirmação de e-mail mantida.
+- Três contas convidadas; os três convites constam como Delivered no Resend. Cada atleta precisa aceitar o link e definir a senha. Usuário informou que fará a definição das três senhas diretamente; nenhuma senha será registrada aqui.
+- Interface publicada carregou o login com SDK real e exibiu versão 2.0.1. Botão de atualização do PWA executado no navegador com sucesso.
+- **Ainda pendente de validação real:** aceitação dos três convites, definição das senhas, login nas três contas, criação/edição/conclusão em aparelhos distintos, recuperação por e-mail e comportamento offline específico no Safari/iPhone e Android.
+- **Dados antigos preservados:** nenhuma migração foi executada. Depois de Ezequiel e Bruna entrarem no grupo, exportar o backup de cada aparelho e confirmar a importação. Não preencher resultados do outro atleta automaticamente.
+- **Próximo passo:** usuário concluir as senhas e avisar; conferir vínculos ao grupo e validar agenda/resultados nas três contas. Guia de teste no README.md.
 
 ## Checklist original (histórico; execução detalhada abaixo)
 
@@ -206,3 +208,17 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 
 - CI do convite: execução push 43065924272 passou; PR 43065935346 expôs teste instável, não sobrescrita no produto. A UI ordena por UUID, mas o fixture alterava sempre a primeira sessão criada; com UUIDs aleatórios, às vezes editava outro treino.
 - Teste corrigido para selecionar o ID exato nas ações de conflito/exclusão. Mantida a comparação de versões e ampliada a tolerância de espera de UI para runners mais lentos. Nova execução pendente antes da publicação.
+
+
+## 2026-11-11 — Etapa 7: publicação e entrega dos convites
+
+- Duas execuções finais do head eb8fae7 passaram, inclusive convite e definição de senha com SDK simulado que consome o hash. Instabilidade de seleção por UUID do teste foi corrigida.
+- PR #1 promovido e integrado à main no merge 7e478b780852a468e36c6d30c8525b40926b83ce. Publicação GitHub Pages e testes da main aprovados nos links do ponto atual.
+- Conferida a URL real no navegador: página de login em português, três nomes no cabeçalho, backup local disponível e versão 2.0.1. SDK real carregado. O service worker apresentou atualização; botão executado e nova página reaberta. Isso não equivale a teste offline real no iPhone/Android.
+- Criadas as três contas pelo recurso oficial Invite user do Supabase Auth, sem senha provisória e sem confirmação administrativa artificial. Convites individuais enviados pelos e-mails informados pelo usuário.
+- Resend confirmou Delivered nos três convites. IDs dos envios: Ezequiel 01a1cb9c-8f72-7921-bc2b-209a6ea8406f; Bruna 01a1cb9d-205d-70dd-ad25-580197303667; Renato 01a1cb9d-9fb9-7477-be09-03b3ad38e126. Não registrar os links de convite, que contêm tokens.
+- Consulta após os envios: três auth.users convidados, três autorizações privadas, zero confirmações, zero membros, zero sessões/resultados. Essa foi a leitura antes da aceitação dos links; não tratar como estado permanente. Vínculo é criado pelo próprio usuário confirmado ao acessar o aplicativo.
+- E-mails usam o template padrão em inglês (“You've been invited”); usuário informou que isso não impede o uso e que fará as senhas das três contas.
+- SMTP e credencial permaneceram salvos após recarregar o dashboard. Chave com Sending access somente para paceplus.app; janela de visualização única fechada após a gravação e área de transferência virtual limpa. Nenhum segredo em código, docs ou logs produzidos.
+- Arquivos desta etapa documental: progress.md e README.md. Sem alteração do código já validado.
+- Pendências: usuário aceitar convites/definir senhas; validar login real e sincronização nos três aparelhos; migrar backups somente após confirmação; verificar recuperação real por e-mail e offline nos dispositivos.

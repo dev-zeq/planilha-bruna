@@ -4,11 +4,16 @@ PWA estático em https://treinos.paceplus.app, GitHub Pages, backend exclusivo S
 
 ## Acesso
 
-1. Configurar SMTP em Authentication → Emails → SMTP Settings. O SMTP padrão do Supabase restringe destinatários à equipe administrativa; autorizar um atleta no aplicativo não resolve a entrega. Não desativar a confirmação de e-mail nem adicionar atletas como administradores da organização para contornar isso.
-2. No aplicativo, cada atleta escolhe **Criar conta**, informa seu próprio e-mail e define sua senha. Confirma o link recebido e faz login. A associação ao grupo é reivindicada apenas se o e-mail confirmado estiver na lista privada.
-3. Os três e-mails fornecidos pelo usuário já foram autorizados no banco. Senhas não são definidas pelo código nem registradas no repositório.
+Versão 2.0.1 publicada em 11/11/2026. SMTP Resend configurado no projeto dedicado, usando domínio verificado paceplus.app e remetente treinos@paceplus.app. Credencial exclusiva limitada a envio, guardada somente na configuração protegida do Supabase.
 
-Site URL e redirect do Auth devem ser exatamente `https://treinos.paceplus.app/`. Cadastro por e-mail habilitado, confirmação habilitada, login anônimo desabilitado. Configuração verificada em 11/11/2026.
+1. Os três convites individuais já foram enviados e constam como Delivered no Resend. Procure “You've been invited”, inclusive na pasta de spam.
+2. Abra o convite do respectivo e-mail. O aplicativo abrirá **Definir nova senha**. Escolha e salve uma senha com pelo menos oito caracteres. Não compartilhe senhas no chat.
+3. Depois, entre em https://treinos.paceplus.app com esse e-mail e senha. A associação ao grupo exige o e-mail confirmado e sua autorização privada.
+4. Repita nas três contas. Se o link tiver expirado ou já sido usado, utilize **Esqueci a senha** com o e-mail correspondente e o link mais recente recebido.
+
+A opção **Criar conta** também está disponível; o cadastro sozinho não dá acesso ao grupo. Não desativar confirmação de e-mail nem adicionar atletas como administradores da organização Supabase.
+
+Site URL e único redirect do Auth: `https://treinos.paceplus.app/`. Cadastro e confirmação por e-mail habilitados, login anônimo desabilitado. As senhas são definidas diretamente pelos usuários.
 
 ## Testar nos celulares
 
