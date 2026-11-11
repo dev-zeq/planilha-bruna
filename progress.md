@@ -311,3 +311,17 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Correção do relatório validada: execução 43076316511 aprovada no commit 0f939158ab47d02408b44ef0832f1c15f8de2f91, incluindo Deno com --frozen, core/servidor, painel privado Strava, sincronização/vínculo simulados, troca A/B/C, fila/conflito e largura móvel.
 - Consulta final: 8 sessões ativas, 3 resultados reais, zero conexões/atividades Strava reais. Dados existentes preservados.
 - Próxima intervenção necessária: autorização específica para salvar o Client Secret do aplicativo Strava 296243 nos secrets do projeto Treinos. Formulário de secrets e cadastro Strava preparados no navegador; nenhum segredo lido/copiado. Após isso publicar a interface e testar OAuth real por atleta.
+
+
+## 2026-11-11 — Etapa 14: configuração autorizada e publicação 2.1.0
+
+- Responsável autorizou explicitamente transferir o Client Secret do aplicativo Treinos Pace Plus para os secrets do projeto Treinos. STRAVA_CLIENT_SECRET e STRAVA_CLIENT_ID salvos em Edge Functions → Secrets de hzcqlygvzxxnvpywzppp; lista de secrets confirmou gravação. Nenhum segredo em código, logs, chat ou navegador do aplicativo; painel Strava voltou a ocultar o valor e variável temporária foi limpa.
+- CI final do head c5118f7a14c5928f984659cf054c054c925a24e3 passou nas execuções 43076480129 e 43076489452.
+- PR #2 integrado à main pelo merge 1ab4d6c5567716391f7f717a4e1d92933f545960 para validar OAuth no domínio definitivo. Pages e testes da main iniciados; aguardam confirmação.
+- Sessão Treinos aberta identifica Ezequiel, enquanto Strava aberto identifica Bruna (atleta 36508418). Não iniciar autorização nessas identidades divergentes; será necessário usar a conta Bruna no Treinos ou a conta Ezequiel no Strava.
+- Ainda não conectado nenhum atleta nem importada atividade real; não marcar OAuth/sincronização como concluídos. Próximo passo: confirmar publicação, testar status autenticado e autorizar a conexão com identidades correspondentes.
+
+- Publicação confirmada: Pages 43076731245 e testes main 43076732516 concluídos com sucesso. Botão “Nova versão disponível — atualizar” usado na PWA; rodapé passou de 2.0.1 para 2.1.0.
+
+- Status autenticado real na versão 2.1.0 confirmou servidor configurado: painel Meu Strava exibiu “Nenhuma conta Strava conectada” e botão Conectar habilitado, sem erro. Agenda manteve os 8 treinos/3 resultados e zero pendências.
+- Preparado login da Bruna no Treinos (bru777@hotmail.com), após sair da sessão Ezequiel sem pendências. Strava permanece Bruna. Intervenção necessária: responsável inserir a senha da Bruna diretamente no aplicativo e entrar; senha não solicitada no chat nem conhecida pelo agente. Não iniciada autorização com identidades divergentes.

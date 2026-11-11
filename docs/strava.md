@@ -1,6 +1,6 @@
 # Strava — integração individual
 
-Estado em 11/11/2026: aplicativo cadastrado; capacidade confirmada de 10 atletas. OAuth, sincronização manual e interface implementados no PR #2. Função strava v1 publicada no projeto Treinos, ainda sem credenciais configuradas; produção aguarda publicação da interface e autorização real. Nenhum token ou segredo foi copiado do Pace Plus.
+Estado em 11/11/2026: aplicativo cadastrado; capacidade confirmada de 10 atletas. OAuth, sincronização manual e interface implementados no PR #2. Função strava v1 publicada no projeto Treinos; credenciais salvas no servidor com autorização explícita do responsável. PR #2 integrado à main; publicação e autorização real em validação. Nenhum token ou segredo foi copiado do Pace Plus.
 
 ## Cadastro preparado
 
@@ -12,7 +12,7 @@ Estado em 11/11/2026: aplicativo cadastrado; capacidade confirmada de 10 atletas
 | Site | https://treinos.paceplus.app |
 | Domínio de callback | treinos.paceplus.app |
 
-Cadastro e aceite concluídos pelo responsável. Client ID 296243, capacidade exibida de 10 atletas. Client Secret deve ser salvo exclusivamente nos secrets de servidor do projeto Treinos, após autorização; não publicar segredos ou tokens.
+Cadastro e aceite concluídos pelo responsável. Client ID 296243, capacidade exibida de 10 atletas. Client Secret salvo exclusivamente nos secrets de servidor do projeto Treinos, com autorização; não publicar segredos ou tokens.
 
 ## Requisitos para a implementação
 
@@ -55,4 +55,4 @@ O painel deste aplicativo confirmou capacidade para 10 atletas. A conexão inici
 5. Sincronizar, repetir e conferir ausência de duplicações. Vincular uma corrida ao próprio treino; conferir que os outros atletas não foram concluídos e não veem os dados da API.
 6. Testar em celular e computador. Registrar o resultado real em progress.md; não marcar concluído só pelo CI simulado.
 
-As credenciais ainda não foram salvas. É necessária autorização específica do responsável para transferir o Client Secret do Strava para os secrets deste projeto Supabase. O responsável também confirma as permissões de leitura no fluxo OAuth de cada atleta.
+Credenciais salvas em 11/11/2026 após autorização explícita do responsável. O responsável ainda precisa confirmar as permissões de leitura no fluxo OAuth de cada atleta, com contas correspondentes no Treinos e no Strava.
