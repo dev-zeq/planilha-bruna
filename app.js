@@ -1,17 +1,18 @@
 import {setupStrava,takeStravaReturn} from './strava-client.mjs';
-import {LEGACY_KEY, escapeHTML as esc, isoLocal, monday, durationSeconds, durationText, paceText, numberOrNull, validateLegacy, legacyOperations, legacyUUID, projectSnapshot} from './core.mjs';
+import {LEGACY_KEY, PERIODS, escapeHTML as esc, isoLocal, monday, durationSeconds, durationText, paceText, numberOrNull, validateLegacy, legacyOperations, legacyUUID, projectSnapshot} from './core.mjs';
 
 const stravaReturn=takeStravaReturn();
 const $=id=>document.getElementById(id);
 const URL_API='https://hzcqlygvzxxnvpywzppp.supabase.co';
 const PUBLIC_KEY='sb_publishable_CVtGBZ41EnVTtVsD4yu-Ug_AdiK2J-l';
-let stravaUI=null;let client,user=null,group=null,members=[],base={sessions:[],results:[]},week=monday(),filter='all',generation=0,refreshPromise=null,authMode='login',formVersion=0,resultVersion=0;
+let stravaUI=null;let client,user=null,group=null,members=[],base={sessions:[],results:[]},week=monday(),viewing=null,tab='week',rankRange='week',scrollToToday=false,syncing=false,refreshAgain=false,generation=0,refreshPromise=null,authMode='login',formVersion=0,resultVersion=0;
 const snapshotKey=uid=>`treinos:cloud:v2:${uid}`;
 const queueKey=uid=>`treinos:queue:v2:${uid}`;
 const read=(key,fallback)=>{const raw=localStorage.getItem(key);return raw===null?fallback:JSON.parse(raw);};
 const queue=uid=>read(queueKey(uid),[]);
 function write(key,value){localStorage.setItem(key,JSON.stringify(value));}
-function message(text,error=false){$('statusMessage').textContent=text;$('statusMessage').classList.toggle('error',error);}
+// Routine confirmations stay available to screen readers; the header pill shows the state.
+function message(text,error=false,quiet=false){const el=$('statusMessage');el.textContent=text;el.classList.toggle('error',error);el.classList.toggle('quiet',quiet&&!error);updateSync();}
 function errorText(error){
  const m=error?.message||String(error);
  if(/Invalid login credentials/i.test(m))return 'E-mail ou senha incorretos.';
@@ -30,36 +31,119 @@ function lock(name,fn){return navigator.locks?navigator.locks.request(name,fn):f
 async function editQueue(uid,fn){return lock('treinos-queue-'+uid,()=>{const q=queue(uid);const next=fn(q)||q;write(queueKey(uid),next);return next;});}
 function view(){return projectSnapshot(base,user?queue(user.id):[],user?.id);}
 function download(data,name){const url=window.URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>window.URL.revokeObjectURL(url),2000);}
-const dayFormat=new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit'});
-const resultLabels={done:'Realizado',planned:'Planejado',skipped:'Não realizado'};
+const weekdayLong=new Intl.DateTimeFormat('pt-BR',{weekday:'long'});
+const weekdayShort=new Intl.DateTimeFormat('pt-BR',{weekday:'short'});
+const monthLong=new Intl.DateTimeFormat('pt-BR',{month:'long'});
+const monthShort=new Intl.DateTimeFormat('pt-BR',{month:'short'});
+const cap=text=>text.charAt(0).toUpperCase()+text.slice(1);
+const addDays=(date,n)=>{const d=new Date(date);d.setDate(d.getDate()+n);return d;};
+const fmtKm=value=>(Number(value)||0).toLocaleString('pt-BR',{maximumFractionDigits:2});
+const periodOrder=p=>{const i=PERIODS.indexOf(p);return i<0?PERIODS.length:i;};
+// Skip DOM writes when nothing changed, so the 20 s poll never closes an open menu.
+const htmlCache=new WeakMap();
+function setHTML(el,html){if(htmlCache.get(el)!==html){el.innerHTML=html;htmlCache.set(el,html);}}
+function weekLabel(start,end){
+ const year=end.getFullYear()!==new Date().getFullYear()?' de '+end.getFullYear():'';
+ if(start.getMonth()===end.getMonth())return `${start.getDate()} a ${end.getDate()} de ${monthLong.format(end)}${year}`;
+ return `${start.getDate()} de ${monthShort.format(start).replace('.','')} a ${end.getDate()} de ${monthShort.format(end).replace('.','')}${year}`;
+}
+function updateSync(){
+ const el=$('syncState');
+ if(!user||!group){el.hidden=true;return;}
+ const q=queue(user.id);
+ const [text,kind]=!navigator.onLine?['Sem internet','warn']
+  :q.some(o=>o.error)?['Revisar pendências','bad']
+  :q.length?[`${q.length} pendente${q.length>1?'s':''}`,'warn']
+  :syncing?['Sincronizando…','']
+  :['Em dia','ok'];
+ el.hidden=false;el.textContent=text;el.className='sync '+kind;
+}
+function sessionCard(s,result,own){
+ const done=result?.status==='done';
+ const tag=s.pending?'Aguardando envio':s.state==='open'?'A definir':'';
+ const meta=[s.period!=='Não definido'?s.period:'',s.planned_km!=null?fmtKm(s.planned_km)+' km planejados':''].filter(Boolean).join(' · ');
+ let outcome='';
+ if(done){
+  const parts=['✓ Feito'];
+  if(result.actual_km!=null)parts.push(fmtKm(result.actual_km)+' km');
+  if(result.duration_seconds!=null)parts.push(durationText(result.duration_seconds),paceText(result.actual_km,result.duration_seconds));
+  if(result.source==='strava')parts.push('Strava (privado)');
+  if(result.pending)parts.push('envio pendente');
+  outcome=`<p class="result ok">${esc(parts.join(' · '))}</p>`;
+ }else if(result?.status==='skipped')outcome=`<p class="result skip">Não realizado${result.pending?' · envio pendente':''}</p>`;
+ else if(!own)outcome='<p class="result none">Ainda não registrado</p>';
+ if(result?.notes)outcome+=`<p class="notes">${esc(result.notes)}</p>`;
+ return `<article class="entry ${done?'done':s.state==='open'?'open':'plan'}"><div class="head"><strong>${esc(s.title)}</strong>${tag?`<span class="tag">${tag}</span>`:''}<details class="menu"><summary aria-label="Mais ações">⋯</summary><div><button class="secondary" data-edit="${s.id}">Editar</button><button class="danger" data-delete="${s.id}">Excluir</button></div></details></div>${meta?`<p class="meta">${esc(meta)}</p>`:''}${s.description?`<p class="desc">${esc(s.description)}</p>`:''}${outcome}${own?`<button class="full${result&&result.status!=='planned'?' secondary':''}" data-result="${s.id}">${done?'Meu resultado':'Concluir treino'}</button>`:''}</article>`;
+}
 function render(){
  if(!user||!group)return;
- const q=queue(user.id),v=view(),end=new Date(week);end.setDate(end.getDate()+6);
- $('period').textContent=`Semana de ${dayFormat.format(week)} a ${dayFormat.format(end)}/${end.getFullYear()}`;
- $('accountName').textContent=(members.find(m=>m.user_id===user.id)?.display_name||user.email)+' · Agenda compartilhada';
- $('filters').innerHTML=[{user_id:'all',display_name:'Todos'},...members].map(m=>`<button data-filter="${esc(m.user_id)}" class="${filter===m.user_id?'active':''}" aria-pressed="${filter===m.user_id}">${esc(m.display_name)}</button>`).join('');
- const selected=members.filter(m=>filter==='all'||m.user_id===filter);
- const sessions=v.sessions.filter(s=>s.training_date>=isoLocal(week)&&s.training_date<=isoLocal(end)&&(filter==='all'||!s.target_user_ids.length||s.target_user_ids.includes(filter)));
- const relevant=[];for(const s of sessions)for(const m of selected)if(!s.target_user_ids.length||s.target_user_ids.includes(m.user_id))relevant.push(v.results.find(r=>r.session_id===s.id&&r.user_id===m.user_id)||{status:'planned'});
- $('done').textContent=relevant.filter(r=>r.status==='done').length;
- $('pending').textContent=relevant.filter(r=>r.status==='planned').length;
- $('km').textContent=relevant.filter(r=>r.status==='done').reduce((sum,r)=>sum+(Number(r.actual_km)||0),0).toLocaleString('pt-BR',{maximumFractionDigits:2})+' km';
- $('days').innerHTML=Array.from({length:7},(_,i)=>{
-  const d=new Date(week);d.setDate(d.getDate()+i);
-  const rows=sessions.filter(s=>s.training_date===isoLocal(d)).sort((a,b)=>a.period.localeCompare(b.period)||a.id.localeCompare(b.id));
-  return `<section class="day"><h2>${esc(new Intl.DateTimeFormat('pt-BR',{weekday:'long'}).format(d))}<small>${dayFormat.format(d)}</small></h2>${rows.length?rows.map(s=>{
-   const targets=selected.filter(m=>!s.target_user_ids.length||s.target_user_ids.includes(m.user_id));
-   const my=v.results.find(r=>r.session_id===s.id&&r.user_id===user.id),canComplete=!s.target_user_ids.length||s.target_user_ids.includes(user.id);
-   return `<article class="entry ${s.state==='open'?'open':'plan'}"><div class="head"><strong>${esc(s.title)}</strong><span class="tag">${s.pending?'Pendente de envio':s.state==='open'?'A definir':'Planejado'}</span></div><p class="who">${esc(s.period)}${s.planned_km!=null?' · '+esc(s.planned_km)+' km planejados':''}</p><p>${esc(s.description)}</p><div class="results">${targets.map(m=>{
-    const r=v.results.find(r=>r.session_id===s.id&&r.user_id===m.user_id);
-    return `<p><b>${esc(m.display_name)}:</b> ${r?resultLabels[r.status]:'Planejado'}${r?.actual_km!=null?' · '+esc(r.actual_km)+' km':''}${r?.duration_seconds!=null?' · '+durationText(r.duration_seconds)+' · '+paceText(r.actual_km,r.duration_seconds):''}${r?.source==='strava'?' · Strava (privado)':''}${r?.pending?' · envio pendente':''}${r?.notes?'<br>'+esc(r.notes):''}</p>`;
-   }).join('')}</div><div class="actions">${canComplete?`<button data-result="${s.id}">${my?.status==='done'?'Meu resultado':'Concluir treino'}</button>`:''}<button class="secondary" data-edit="${s.id}">Editar</button><button class="danger" data-delete="${s.id}">Excluir</button></div></article>`;
-  }).join(''):'<p class="muted">Nenhum treino registrado</p>'}</section>`;
- }).join('');
+ // Each account opens on its own schedule; another athlete is shown only on request.
+ if(!members.some(m=>m.user_id===viewing))viewing=user.id;
+ const own=viewing===user.id,q=queue(user.id),v=view(),end=addDays(week,6),from=isoLocal(week),to=isoLocal(end),todayISO=isoLocal(new Date());
+ $('accountName').textContent=members.find(m=>m.user_id===user.id)?.display_name||user.email;
+ const people=[...members].sort((a,b)=>(b.user_id===user.id)-(a.user_id===user.id));
+ setHTML($('filters'),people.map(m=>`<button data-filter="${esc(m.user_id)}" class="${viewing===m.user_id?'active':''}" aria-pressed="${viewing===m.user_id}">${esc(m.display_name)}</button>`).join(''));
+ $('period').textContent=weekLabel(week,end);
+ $('today').hidden=isoLocal(monday())===from;
+ const sessions=v.sessions.filter(s=>s.training_date>=from&&s.training_date<=to&&(!s.target_user_ids.length||s.target_user_ids.includes(viewing)));
+ const resultOf=s=>v.results.find(r=>r.session_id===s.id&&r.user_id===viewing);
+ const done=sessions.filter(s=>resultOf(s)?.status==='done');
+ $('summaryDone').textContent=sessions.length?`${done.length} de ${sessions.length} ${sessions.length===1?'feito':'feitos'}`:'Nenhum treino nesta semana';
+ $('summaryKm').textContent=fmtKm(done.reduce((sum,s)=>sum+(Number(resultOf(s).actual_km)||0),0))+' km';
+ $('summaryBar').style.width=(sessions.length?Math.round(done.length/sessions.length*100):0)+'%';
+ const days=Array.from({length:7},(_,i)=>{
+  const date=addDays(week,i),iso=isoLocal(date);
+  const rows=sessions.filter(s=>s.training_date===iso).sort((a,b)=>periodOrder(a.period)-periodOrder(b.period)||a.id.localeCompare(b.id));
+  return {date,iso,rows,name:weekdayLong.format(date).replace('-feira','')};
+ });
+ setHTML($('strip'),days.map(d=>{
+  const state=!d.rows.length?'':d.rows.every(s=>resultOf(s)?.status==='done')?'ok':'todo';
+  const label=`${d.name} ${d.date.getDate()}: ${d.rows.length?d.rows.length+' treino(s)':'sem treino, tocar para planejar'}`;
+  return `<button data-day="${d.iso}" class="${state}${d.iso===todayISO?' today':''}" aria-label="${esc(label)}">${esc(weekdayShort.format(d.date).replace('.',''))}<b>${d.date.getDate()}</b><i></i></button>`;
+ }).join(''));
+ const empty=days.filter(d=>!d.rows.length).map(d=>d.name);
+ const emptyText=empty.length===7?'Nenhum treino nesta semana. Toque em um dia ou em Novo treino para planejar.'
+  :empty.length?cap(empty.length>1?empty.slice(0,-1).join(', ')+' e '+empty.at(-1):empty[0])+' sem treino'
+  :'';
+ setHTML($('days'),days.filter(d=>d.rows.length).map(d=>`<section class="day" id="day-${d.iso}"><h2>${d.iso===todayISO?'Hoje, ':''}${esc(d.iso===todayISO?d.name:cap(d.name))} ${d.date.getDate()}</h2>${d.rows.map(s=>sessionCard(s,resultOf(s),own)).join('')}</section>`).join('')+(emptyText?`<p class="empty-days">${esc(emptyText)}</p>`:''));
+ if(scrollToToday){
+  scrollToToday=false;
+  const first=days.find(d=>d.rows.length);
+  if(first&&first.iso!==todayISO)document.getElementById('day-'+todayISO)?.scrollIntoView({block:'start'});
+ }
  $('queuePanel').hidden=!q.length;
- $('queuePanel').innerHTML=`<strong>${q.length} operação(ões) pendente(s) neste aparelho</strong><p>Os dados abaixo ainda precisam ser confirmados pelo servidor.</p>${q.some(o=>o.error)?'<p>Uma operação parou a fila. Exporte as pendências antes de descartá-la. Depois revise o treino atualizado.</p>':''}<ul>${q.filter(o=>o.error).map(o=>`<li>${esc(o.body.data.title||o.body.kind)}: ${esc(o.error)} <button class="danger" data-discard="${o.id}">Descartar esta operação</button></li>`).join('')}</ul><button id="sendPending">Tentar enviar</button><button class="secondary" id="backupPending">Exportar pendências</button>`;
- if($('sendPending'))$('sendPending').onclick=()=>guarded(async()=>{await editQueue(user.id,q=>q.map(({error,...op})=>op));await refresh(true);},$('sendPending'));
- if($('backupPending'))$('backupPending').onclick=exportCloud;
+ setHTML($('queuePanel'),`<strong>${q.length} operação(ões) pendente(s) neste aparelho</strong><p>Os dados abaixo ainda precisam ser confirmados pelo servidor.</p>${q.some(o=>o.error)?'<p>Uma operação parou a fila. Exporte as pendências antes de descartá-la. Depois revise o treino atualizado.</p>':''}<ul>${q.filter(o=>o.error).map(o=>`<li>${esc(o.body.data.title||o.body.kind)}: ${esc(o.error)} <button class="danger small" data-discard="${o.id}">Descartar esta operação</button></li>`).join('')}</ul><div class="actions"><button id="sendPending">Tentar enviar</button><button class="secondary" id="backupPending">Exportar pendências</button></div>`);
+ if(tab==='rank')renderRank();
+ updateSync();
+}
+function renderRank(){
+ if(!user||!group)return;
+ const v=view(),now=new Date(),year=now.getFullYear();let from,to,label;
+ if(rankRange==='week'){const start=monday();from=isoLocal(start);to=isoLocal(addDays(start,6));label='Semana de '+weekLabel(start,addDays(start,6));}
+ else if(rankRange==='month'){from=isoLocal(new Date(year,now.getMonth(),1));to=isoLocal(new Date(year,now.getMonth()+1,0));label=cap(monthLong.format(now))+' de '+year;}
+ else{from=year+'-01-01';to=year+'-12-31';label='Ano de '+year;}
+ const dates=new Map(v.sessions.map(s=>[s.id,s.training_date]));
+ const rows=members.map(m=>{
+  let km=0,count=0;
+  for(const r of v.results){
+   const date=dates.get(r.session_id);
+   if(r.user_id!==m.user_id||r.status!=='done'||!date||date<from||date>to)continue;
+   km+=Number(r.actual_km)||0;count++;
+  }
+  return {m,km,count};
+ }).sort((a,b)=>b.km-a.km||b.count-a.count||a.m.display_name.localeCompare(b.m.display_name));
+ const max=Math.max(0,...rows.map(r=>r.km));
+ for(const b of $('rankPeriod').querySelectorAll('button')){b.classList.toggle('active',b.dataset.rank===rankRange);b.setAttribute('aria-pressed',b.dataset.rank===rankRange);}
+ $('rankLabel').textContent=label;
+ setHTML($('rankList'),rows.map((r,i)=>`<li class="${r.m.user_id===user.id?'me':''}"><span class="pos">${i+1}</span><strong>${esc(r.m.display_name)}</strong><span class="km">${fmtKm(r.km)} km</span><div class="progress"><div style="width:${max?Math.round(r.km/max*100):0}%"></div></div><small>${r.count} treino${r.count===1?'':'s'} concluído${r.count===1?'':'s'}</small></li>`).join(''));
+}
+function setTab(name){
+ tab=name;
+ for(const [id,key] of [['tabWeek','week'],['tabRank','rank'],['tabStrava','strava'],['tabAccount','account']])$(id).hidden=key!==name;
+ for(const b of $('tabs').querySelectorAll('button')){const on=b.dataset.tab===name;b.classList.toggle('active',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}
+ if(name==='rank')renderRank();
+ if(name==='strava')stravaUI?.show();
+ window.scrollTo(0,0);
 }
 async function enqueueMany(bodies){
  if(!user||!group)throw Error('Entre no grupo antes de salvar.');
@@ -68,6 +152,8 @@ async function enqueueMany(bodies){
  await editQueue(uid,q=>q.concat(ops.filter(op=>!q.some(existing=>existing.id===op.id))));
  if(user?.id!==uid)return;
  render();message('Alteração guardada neste aparelho. Aguardando confirmação do servidor.');
+ // A sync already past its send loop would leave this operation waiting for the next poll.
+ if(refreshPromise)refreshAgain=true;
  void guarded(()=>refresh(true));
 }
 function check(result){if(result.error)throw result.error;return result.data;}
@@ -80,16 +166,16 @@ async function refresh(send=true){
  if(!uid||!gid)return;
  refreshPromise=lock('treinos-sync-'+uid,async()=>{
   if(!navigator.onLine){message('Sem internet — exibindo a última cópia deste aparelho. Alterações ficam pendentes.');render();return;}
-  message('Sincronizando agenda…');
+  syncing=true;message('Sincronizando agenda…',false,true);
   const current=()=>user?.id===uid&&generation===gen;
   if(send){
    while(current()){
     const op=queue(uid)[0];if(!op)break;
     if(op.error)break;
-    const {error}=await client.rpc('apply_training_operation',{op_id:op.id,body:op.body});
+    const {error,status}=await client.rpc('apply_training_operation',{op_id:op.id,body:op.body});
     if(!current())return;
     if(error){
-     const transient=/fetch|network|timeout|JWT|session/i.test(error.message)||!navigator.onLine||Number(error.status)>=500;
+     const transient=/fetch|network|timeout|JWT|session/i.test(error.message)||!navigator.onLine||Number(status)>=500||Number(status)===429;
      if(!transient)await editQueue(uid,q=>q.map(o=>o.id===op.id?{...o,error:errorText(error)}:o));
      message(errorText(error),true);break;
     }
@@ -110,16 +196,19 @@ async function refresh(send=true){
   if(!current())return;
   members=ms;base={sessions,results};write(snapshotKey(uid),{group:gid,members,base,savedAt:new Date().toISOString()});
   render();const pending=queue(uid);
-  message(pending.length?`${pending.length} operação(ões) aguardando envio ou revisão.`:'Agenda atualizada. Todas as alterações foram confirmadas.',pending.some(o=>o.error));
- }).finally(()=>{refreshPromise=null;});
+  message(pending.length?`${pending.length} operação(ões) aguardando envio ou revisão.`:'Agenda atualizada. Todas as alterações foram confirmadas.',pending.some(o=>o.error),!pending.length);
+ }).finally(()=>{
+  refreshPromise=null;syncing=false;updateSync();
+  if(refreshAgain){refreshAgain=false;if(user?.id===uid&&navigator.onLine)void guarded(()=>refresh(true));}
+ });
  return refreshPromise;
 }
 function showPanel(name){for(const id of ['auth','access','app'])$(id+'Panel').hidden=id!==name;for(const id of ['exportCloud','migrate','importBtn'])$(id).hidden=name!=='app';}
 async function handleSession(session){
  const uid=session?.user?.id;
  if(uid===user?.id&&group)return;
- generation++;stravaUI?.reset();const previousRefresh=refreshPromise;user=session?.user||null;group=null;members=[];base={sessions:[],results:[]};filter='all';
- $('days').innerHTML='';$('queuePanel').innerHTML='';$('email').value='';$('password').value='';
+ generation++;stravaUI?.reset();const previousRefresh=refreshPromise;user=session?.user||null;group=null;members=[];base={sessions:[],results:[]};viewing=null;scrollToToday=true;setTab('week');
+ setHTML($('days'),'');setHTML($('queuePanel'),'');updateSync();$('email').value='';$('password').value='';
  if(!user){showPanel('auth');message('Entre para acessar a agenda compartilhada.');return;}
  const gen=generation;
  if(!navigator.onLine){
@@ -135,8 +224,8 @@ async function handleSession(session){
  if(previousRefresh)await previousRefresh.catch(()=>{});if(gen!==generation)return;group=membership[0].group_id;showPanel('app');await refresh(true);await stravaUI?.load();
 }
 function setAuthMode(mode){authMode=mode;$('authTitle').textContent=({login:'Sua agenda de treinos',signup:'Criar minha conta',recover:'Recuperar senha',password:'Definir nova senha'})[mode];$('authSubmit').textContent=({login:'Entrar',signup:'Cadastrar',recover:'Enviar link de recuperação',password:'Salvar nova senha'})[mode];$('passwordLabel').hidden=mode==='recover';$('password').required=mode!=='recover';$('password').autocomplete=mode==='login'?'current-password':'new-password';$('email').parentElement.hidden=mode==='password';$('email').required=mode!=='password';$('signup').hidden=mode!=='login';$('recover').hidden=mode!=='login';$('backLogin').hidden=mode==='login'||mode==='password';$('authMessage').textContent='';}
-function openSession(id){
- const s=view().sessions.find(s=>s.id===id);formVersion=s?.version||0;$('sessionForm').reset();$('sessionTitle').textContent=s?'Editar treino':'Novo treino';$('sessionId').value=s?.id||'';$('trainingDate').value=s?.training_date||isoLocal(week);$('periodInput').value=s?.period||'Não definido';$('titleInput').value=s?.title||'';$('descriptionInput').value=s?.description||'';$('plannedInput').value=s?.planned_km??'';$('stateInput').value=s?.state||'planned';$('targets').innerHTML=members.map(m=>`<label><input type="checkbox" value="${m.user_id}" ${s?.target_user_ids.includes(m.user_id)?'checked':''}>${esc(m.display_name)}</label>`).join('');$('sessionDialog').showModal();
+function openSession(id,date){
+ const s=view().sessions.find(s=>s.id===id);formVersion=s?.version||0;$('sessionForm').reset();$('sessionTitle').textContent=s?'Editar treino':'Novo treino';$('sessionId').value=s?.id||'';const today=isoLocal(new Date()),inWeek=today>=isoLocal(week)&&today<=isoLocal(addDays(week,6));$('trainingDate').value=s?.training_date||date||(inWeek?today:isoLocal(week));$('periodInput').value=s?.period||'Não definido';$('titleInput').value=s?.title||'';$('descriptionInput').value=s?.description||'';$('plannedInput').value=s?.planned_km??'';$('stateInput').value=s?.state||'planned';$('targets').innerHTML=members.map(m=>`<label><input type="checkbox" value="${m.user_id}" ${(s?s.target_user_ids.includes(m.user_id):viewing!==user.id&&m.user_id===viewing)?'checked':''}>${esc(m.display_name)}</label>`).join('');$('sessionDialog').showModal();
 }
 function openResult(id){const v=view(),s=v.sessions.find(s=>s.id===id),r=v.results.find(r=>r.session_id===id&&r.user_id===user.id);if(!s)return;resultVersion=r?.version||0;$('resultForm').reset();$('resultSession').value=id;$('resultTitle').textContent=s.title;$('resultStatus').value=r?.status||'done';$('actualInput').value=r?.actual_km??'';$('durationInput').value=durationText(r?.duration_seconds);$('notesInput').value=r?.notes||'';previewPace();$('resultDialog').showModal();}
 function previewPace(){try{$('pacePreview').textContent='Pace: '+paceText(numberOrNull($('actualInput').value),durationSeconds($('durationInput').value));}catch{$('pacePreview').textContent='Pace: informe o tempo como 00:45:30.';}}
@@ -171,14 +260,22 @@ async function logout(){
 $('logout').onclick=$('accessLogout').onclick=()=>guarded(logout);
 $('checkAccess').onclick=()=>guarded(async()=>{group=null;await handleSession((await client.auth.getSession()).data.session);},$('checkAccess'));
 $('refresh').onclick=()=>guarded(()=>refresh(true),$('refresh'));
-$('new').onclick=()=>openSession();$('prev').onclick=()=>{week.setDate(week.getDate()-7);render();};$('next').onclick=()=>{week.setDate(week.getDate()+7);render();};$('today').onclick=()=>{week=monday();render();};
-$('filters').onclick=e=>{const b=e.target.closest('[data-filter]');if(b){filter=b.dataset.filter;render();}};
+$('new').onclick=()=>openSession();$('prev').onclick=()=>{week.setDate(week.getDate()-7);render();};$('next').onclick=()=>{week.setDate(week.getDate()+7);render();};$('today').onclick=()=>{week=monday();scrollToToday=true;render();};
+$('filters').onclick=e=>{const b=e.target.closest('[data-filter]');if(b){viewing=b.dataset.filter;render();}};
+$('tabs').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)setTab(b.dataset.tab);};
+$('rankPeriod').onclick=e=>{const b=e.target.closest('[data-rank]');if(b){rankRange=b.dataset.rank;renderRank();}};
+// A day with workouts scrolls into view; an empty day starts a new workout on that date.
+$('strip').onclick=e=>{const b=e.target.closest('[data-day]');if(!b)return;const el=document.getElementById('day-'+b.dataset.day);if(el)el.scrollIntoView({block:'start',behavior:'smooth'});else openSession(null,b.dataset.day);};
+document.addEventListener('click',e=>{for(const menu of document.querySelectorAll('.menu[open]'))if(!menu.contains(e.target)||e.target.closest('.menu button'))menu.open=false;});
 $('days').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.edit)openSession(b.dataset.edit);if(b.dataset.result)openResult(b.dataset.result);if(b.dataset.delete)void guarded(async()=>{const s=view().sessions.find(s=>s.id===b.dataset.delete);if(s&&confirm('Excluir este treino da agenda de todos? Os resultados também deixarão de aparecer na agenda.'))await enqueueMany([{kind:'delete',version:s.version,data:{id:s.id}}]);});};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
 $('sessionForm').onsubmit=e=>{e.preventDefault();void guarded(async()=>{const id=$('sessionId').value||crypto.randomUUID();const data={id,group_id:group,training_date:$('trainingDate').value,period:$('periodInput').value,title:$('titleInput').value.trim(),description:$('descriptionInput').value.trim(),planned_km:numberOrNull($('plannedInput').value),state:$('stateInput').value,target_user_ids:Array.from($('targets').querySelectorAll('input:checked'),x=>x.value)};if(!data.title)throw Error('Informe o nome do treino.');await enqueueMany([{kind:formVersion?'update':'create',version:formVersion,data}]);$('sessionDialog').close();},e.submitter);};
 $('actualInput').oninput=$('durationInput').oninput=previewPace;
 $('resultForm').onsubmit=e=>{e.preventDefault();void guarded(async()=>{const data={session_id:$('resultSession').value,status:$('resultStatus').value,actual_km:numberOrNull($('actualInput').value),duration_seconds:durationSeconds($('durationInput').value),notes:$('notesInput').value.trim()};await enqueueMany([{kind:'result',version:resultVersion,data}]);$('resultDialog').close();},e.submitter);};
-$('queuePanel').onclick=e=>{const id=e.target.closest('[data-discard]')?.dataset.discard;if(id)void guarded(async()=>{if(!confirm('Descartar esta operação pendente? Exporte primeiro se quiser preservar o conteúdo. Operações posteriores dependentes poderão precisar de revisão.'))return;await editQueue(user.id,q=>q.filter(o=>o.id!==id));await refresh(true);render();});};
+$('queuePanel').onclick=e=>{
+ if(e.target.closest('#sendPending')){void guarded(async()=>{await editQueue(user.id,q=>q.map(({error,...op})=>op));await refresh(true);},$('sendPending'));return;}
+ if(e.target.closest('#backupPending')){exportCloud();return;}
+ const id=e.target.closest('[data-discard]')?.dataset.discard;if(id)void guarded(async()=>{if(!confirm('Descartar esta operação pendente? Exporte primeiro se quiser preservar o conteúdo. Operações posteriores dependentes poderão precisar de revisão.'))return;await editQueue(user.id,q=>q.filter(o=>o.id!==id));await refresh(true);render();});};
 $('exportLegacy').onclick=()=>guarded(exportLegacy);$('exportCloud').onclick=()=>guarded(exportCloud);$('migrate').onclick=()=>guarded(()=>importLegacy(read(LEGACY_KEY,null)),$('migrate'));$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=e=>guarded(async()=>{const file=e.target.files[0];try{if(!file)return;if(file.size>2*1024*1024)throw Error('Arquivo maior que 2 MB.');await importLegacy(JSON.parse(await file.text()));}finally{e.target.value='';}});
 window.addEventListener('online',()=>guarded(async()=>{if(user&&!group)await handleSession((await client.auth.getSession()).data.session);else await refresh(true);}));window.addEventListener('offline',()=>{message('Sem internet — alterações ficam pendentes neste aparelho.');render();});
 window.addEventListener('storage',e=>{if(user&&e.key===queueKey(user.id)){render();void guarded(()=>refresh(true));}});
@@ -194,7 +291,7 @@ try{
  const needsPassword=['recovery','invite'].includes(incoming.get('type'));
  if(needsPassword)setAuthMode('password');
  client=window.supabase.createClient(URL_API,PUBLIC_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:(url,options={})=>fetch(url,{...options,signal:options.signal||AbortSignal.timeout(15000)})}});
- stravaUI=setupStrava({client,getUser:()=>user,getSnapshot:view,refresh:()=>refresh(true),oauthReturn:stravaReturn});
+ stravaUI=setupStrava({isVisible:()=>tab==='strava',client,getUser:()=>user,getSnapshot:view,refresh:()=>refresh(true),oauthReturn:stravaReturn});
  client.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(event==='PASSWORD_RECOVERY'){generation++;user=session.user;group=null;showPanel('auth');setAuthMode('password');message('Defina sua nova senha.');}else if(authMode!=='password')void guarded(()=>handleSession(session));},0);});
  const {data,error}=await client.auth.getSession();if(error)throw error;
  if(needsPassword&&data.session){user=data.session.user;showPanel('auth');setAuthMode('password');message('Defina sua nova senha.');}else {setAuthMode('login');await handleSession(data.session);if(incoming.get('error'))message('Este link de acesso expirou ou já foi utilizado. Solicite um novo link em Esqueci a senha.',true);}

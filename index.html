@@ -1,32 +1,221 @@
 <!doctype html>
-<html lang="pt-BR"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Treinos | Agenda compartilhada</title><meta name="theme-color" content="#123c38">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Treinos">
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Treinos | Agenda compartilhada</title>
+<meta name="theme-color" content="#123c38">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Treinos">
 <meta name="description" content="Organize sua agenda de treinos e acompanhe resultados individuais.">
-<meta name="referrer" content="no-referrer"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg"><link rel="apple-touch-icon" href="./icon-512.png"><link rel="stylesheet" href="./styles.css">
-</head><body>
-<header class="app-header"><div class="brand"><img src="./icon.svg" alt="" width="52" height="52"><h1>Treinos</h1></div></header>
+<meta name="referrer" content="no-referrer">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg">
+<link rel="apple-touch-icon" href="./icon-512.png">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="brand"><img src="./icon.svg" alt="" width="36" height="36"><h1>Treinos</h1></div>
+  <span id="syncState" class="sync" hidden></span>
+</header>
 <div id="statusMessage" class="status" role="status" aria-live="polite">Carregando aplicativo…</div>
-<div class="wrap"><button class="secondary" id="updateApp" hidden>Nova versão disponível — atualizar</button>
-<section id="authPanel" class="auth"><h2 id="authTitle">Sua agenda de treinos</h2><p class="hint">Entre com seu e-mail individual. O acesso ao grupo precisa estar autorizado.</p>
-<form id="authForm"><label>E-mail<input id="email" type="email" autocomplete="email" required></label><label id="passwordLabel">Senha<input id="password" type="password" autocomplete="current-password" required minlength="8"></label><button id="authSubmit" type="submit">Entrar</button></form>
-<p id="authMessage" role="status" aria-live="polite"></p><div class="actions"><button class="secondary" id="signup">Criar conta</button><button class="secondary" id="recover">Esqueci a senha</button><button class="secondary" id="backLogin" hidden>Voltar ao login</button></div>
+
+<div class="wrap">
+<button class="secondary full" id="updateApp" hidden>Nova versão disponível — atualizar</button>
+
+<section id="authPanel" class="auth">
+  <h2 id="authTitle">Sua agenda de treinos</h2>
+  <p class="hint">Entre com seu e-mail individual. O acesso ao grupo precisa estar autorizado.</p>
+  <form id="authForm">
+    <label>E-mail<input id="email" type="email" autocomplete="email" required></label>
+    <label id="passwordLabel">Senha<input id="password" type="password" autocomplete="current-password" required minlength="8"></label>
+    <button id="authSubmit" type="submit">Entrar</button>
+  </form>
+  <p id="authMessage" role="status" aria-live="polite"></p>
+  <div class="actions">
+    <button class="secondary" id="signup">Criar conta</button>
+    <button class="secondary" id="recover">Esqueci a senha</button>
+    <button class="secondary" id="backLogin" hidden>Voltar ao login</button>
+  </div>
 </section>
-<section id="accessPanel" class="auth" hidden><h2>Aguardando autorização</h2><p>Seu e-mail precisa estar confirmado e autorizado para este grupo. O cadastro sozinho não libera acesso.</p><button id="checkAccess">Verificar acesso</button><button class="secondary" id="accessLogout">Sair</button></section>
+
+<section id="accessPanel" class="auth" hidden>
+  <h2>Aguardando autorização</h2>
+  <p>Seu e-mail precisa estar confirmado e autorizado para este grupo. O cadastro sozinho não libera acesso.</p>
+  <div class="actions">
+    <button id="checkAccess">Verificar acesso</button>
+    <button class="secondary" id="accessLogout">Sair</button>
+  </div>
+</section>
+
 <section id="appPanel" hidden>
-<div class="account"><span id="accountName"></span><button class="secondary" id="refresh">Atualizar</button><button class="secondary" id="logout">Sair</button></div>
-<div class="bar"><strong id="period"></strong><div><button class="secondary" id="prev">← Semana</button><button class="secondary" id="today">Hoje</button><button class="secondary" id="next">Semana →</button><button id="new">+ Novo treino</button></div></div>
-<div class="stats"><div class="stat"><b id="done">0</b><span>Resultados realizados no filtro</span></div><div class="stat"><b id="km">0 km</b><span>Distância realizada no filtro</span></div><div class="stat"><b id="pending">0</b><span>Treinos ainda pendentes no filtro</span></div></div>
-<div class="filters" id="filters" aria-label="Filtrar atleta"></div><div id="queuePanel" class="queue" hidden></div><details class="note" id="stravaPanel"><summary><strong>Meu Strava</strong></summary><p class="hint">Conecte a sua conta para importar corridas dos últimos 30 dias. Atividades e resultados vindos do Strava ficam visíveis somente nesta conta.</p><p id="stravaAutomatic" class="hint"></p><p id="stravaConnection"></p><p id="stravaMessage" role="status" aria-live="polite"></p><div class="actions"><button id="stravaAuto" class="secondary" hidden>Ativar sincronização automática</button><button id="stravaConnect" disabled>Conectar com Strava</button><button id="stravaSync" hidden>Sincronizar atividades</button><button id="stravaDisconnect" class="secondary" hidden>Desconectar</button></div><p id="stravaSelected" class="hint"></p><button id="stravaGroup" class="secondary" disabled>Vincular atividades selecionadas</button><div id="stravaActivities"></div></details><main id="days" class="grid"></main>
+  <nav class="tabs" id="tabs" aria-label="Seções do aplicativo">
+    <button data-tab="week" class="active" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg>Semana
+    </button>
+    <button data-tab="rank">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-6M12 20V5M19 20v-9"/></svg>Ranking
+    </button>
+    <button data-tab="strava">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h4l3-8 4 14 3-6h4"/></svg>Strava
+    </button>
+    <button data-tab="account">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Conta
+    </button>
+  </nav>
+
+  <section id="tabWeek">
+    <div class="people" id="filters" aria-label="Ver a planilha de"></div>
+    <div class="weekbar">
+      <button class="icon secondary" id="prev" aria-label="Semana anterior">‹</button>
+      <strong id="period"></strong>
+      <button class="secondary small" id="today" hidden>Hoje</button>
+      <button class="icon secondary" id="next" aria-label="Próxima semana">›</button>
+    </div>
+    <div class="strip" id="strip"></div>
+    <div class="summary">
+      <div class="summary-text"><span id="summaryDone"></span><span id="summaryKm"></span></div>
+      <div class="progress"><div id="summaryBar"></div></div>
+    </div>
+    <div id="queuePanel" class="queue" hidden></div>
+    <main id="days"></main>
+    <button id="new" class="full">+ Novo treino</button>
+  </section>
+
+  <section id="tabRank" hidden>
+    <div class="segmented" id="rankPeriod" aria-label="Período do ranking">
+      <button data-rank="week">Semana</button>
+      <button data-rank="month">Mês</button>
+      <button data-rank="year">Ano</button>
+    </div>
+    <h2 class="section-title" id="rankLabel"></h2>
+    <ol id="rankList" class="rank"></ol>
+    <p class="hint">Soma da distância dos treinos concluídos no período. Resultados importados do Strava ficam privados, então por enquanto só entram no total de quem os registrou nesta conta.</p>
+  </section>
+
+  <section id="tabStrava" hidden>
+    <div class="note" id="stravaPanel">
+      <h2 class="section-title">Meu Strava</h2>
+      <p class="hint">Conecte a sua conta para importar corridas dos últimos 30 dias. Atividades e resultados vindos do Strava ficam visíveis somente nesta conta.</p>
+      <p id="stravaAutomatic" class="hint"></p>
+      <p id="stravaConnection"></p>
+      <p id="stravaMessage" role="status" aria-live="polite"></p>
+      <div class="actions">
+        <button id="stravaAuto" class="secondary" hidden>Ativar sincronização automática</button>
+        <button id="stravaConnect" disabled>Conectar com Strava</button>
+        <button id="stravaSync" hidden>Sincronizar atividades</button>
+        <button id="stravaDisconnect" class="secondary" hidden>Desconectar</button>
+      </div>
+      <p id="stravaSelected" class="hint"></p>
+      <button id="stravaGroup" class="secondary full" disabled>Vincular atividades selecionadas</button>
+      <div id="stravaActivities"></div>
+    </div>
+  </section>
+
+  <section id="tabAccount" hidden>
+    <div class="note">
+      <h2 class="section-title" id="accountName"></h2>
+      <p class="hint">Use “Sair” ao usar um aparelho compartilhado.</p>
+      <div class="actions">
+        <button class="secondary" id="refresh">Atualizar agenda</button>
+        <button class="secondary" id="logout">Sair</button>
+      </div>
+    </div>
+    <div class="note">
+      <h3>Backups e dados deste aparelho</h3>
+      <p>Seus treinos antigos continuam guardados neste navegador. Exporte um backup antes de importar para a agenda compartilhada.</p>
+      <div class="actions wrap-actions">
+        <button class="secondary" id="exportLegacy">Exportar dados antigos</button>
+        <button class="secondary" id="exportCloud" hidden>Exportar agenda e pendências</button>
+        <button class="secondary" id="migrate" hidden>Migrar dados deste aparelho</button>
+        <button class="secondary" id="importBtn" hidden>Importar backup antigo</button>
+        <input hidden type="file" id="importFile" accept="application/json,.json">
+      </div>
+    </div>
+    <div id="installHelp" class="note install-note">
+      <h3>Instalar no celular</h3>
+      <p>iPhone: no Safari, Compartilhar → Adicionar à Tela de Início. Android: no Chrome, menu ⋮ → Instalar app.</p>
+      <button id="installBtn" hidden>Instalar aplicativo</button>
+    </div>
+    <footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Versão 2.3.0.</footer>
+  </section>
 </section>
-<section class="note"><h3>Backups e dados deste aparelho</h3><p>Seus treinos antigos continuam guardados neste navegador. Exporte um backup antes de importar para a agenda compartilhada.</p><div class="bar"><button class="secondary" id="exportLegacy">Exportar dados antigos</button><button class="secondary" id="exportCloud" hidden>Exportar agenda e pendências</button><button class="secondary" id="migrate" hidden>Migrar dados deste aparelho</button><button class="secondary" id="importBtn" hidden>Importar backup antigo</button><input hidden type="file" id="importFile" accept="application/json,.json"></div></section>
-<p id="pwaMessage" class="hint" role="status"></p><section id="installHelp" class="install-note"><strong>Instalar no celular</strong><p>iPhone: no Safari, Compartilhar → Adicionar à Tela de Início. Android: no Chrome, menu ⋮ → Instalar app.</p><button id="installBtn" hidden>Instalar aplicativo</button></section>
-<footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Use “Sair” ao usar um aparelho compartilhado. Versão 2.2.1.</footer></div>
-<dialog id="sessionDialog"><form id="sessionForm"><h2 id="sessionTitle">Novo treino</h2><input id="sessionId" type="hidden"><label>Dia<input id="trainingDate" type="date" required></label><label>Período<select id="periodInput"><option>Manhã</option><option>Tarde</option><option>Noite</option><option>Não definido</option></select></label><label>Treino<input id="titleInput" required maxlength="160"></label><label>Descrição e orientação<textarea id="descriptionInput" maxlength="20000"></textarea></label><label>Distância planejada (km)<input id="plannedInput" type="number" min="0" max="1000" step="0.01"></label><label>Planejamento<select id="stateInput"><option value="planned">Planejado</option><option value="open">A definir</option></select></label><fieldset><legend>Atletas</legend><p class="hint">Sem seleção: todos os integrantes, incluindo futuros atletas.</p><div id="targets" class="targets"></div></fieldset><p class="hint">Os resultados são registrados separadamente por cada atleta.</p><div class="buttons"><button class="secondary" type="button" data-close="sessionDialog">Cancelar</button><button type="submit">Salvar treino</button></div></form></dialog>
-<dialog id="resultDialog"><form id="resultForm"><h2>Meu resultado</h2><p id="resultTitle"></p><input id="resultSession" type="hidden"><label>Situação<select id="resultStatus"><option value="done">Realizado</option><option value="planned">Planejado</option><option value="skipped">Não realizado</option></select></label><label>Distância realizada (km)<input id="actualInput" type="number" min="0" max="1000" step="0.01"></label><label>Tempo (horas:minutos:segundos)<input id="durationInput" placeholder="00:45:30" inputmode="text" pattern="[0-9]{1,3}:[0-5][0-9]:[0-5][0-9]"></label><p id="pacePreview" class="hint">Pace: —</p><label>Observações<textarea id="notesInput" maxlength="20000"></textarea></label><div class="buttons"><button class="secondary" type="button" data-close="resultDialog">Cancelar</button><button type="submit">Salvar meu resultado</button></div></form></dialog>
-<dialog id="stravaConfirm"><h2 id="stravaConfirmTitle"></h2><p id="stravaConfirmText"></p><div class="actions"><button type="button" class="secondary" data-strava-close="stravaConfirm">Cancelar</button><button type="button" id="stravaConfirmYes">Confirmar</button></div></dialog>
-<dialog id="stravaLinkDialog"><form id="stravaLinkForm"><h2>Vincular meu resultado</h2><p id="stravaLinkActivity"></p><label>Treino da agenda<select id="stravaSession" required></select></label><p id="stravaLinkNote" class="hint"></p><div class="buttons"><button type="button" class="secondary" data-strava-close="stravaLinkDialog">Cancelar</button><button type="submit">Confirmar meu resultado</button></div></form></dialog>
+
+<p id="pwaMessage" class="hint" role="status"></p>
+</div>
+
+<dialog id="sessionDialog">
+  <form id="sessionForm">
+    <h2 id="sessionTitle">Novo treino</h2>
+    <input id="sessionId" type="hidden">
+    <label>Dia<input id="trainingDate" type="date" required></label>
+    <label>Período
+      <select id="periodInput"><option>Manhã</option><option>Tarde</option><option>Noite</option><option>Não definido</option></select>
+    </label>
+    <label>Treino<input id="titleInput" required maxlength="160"></label>
+    <label>Descrição e orientação<textarea id="descriptionInput" maxlength="20000"></textarea></label>
+    <label>Distância planejada (km)<input id="plannedInput" type="number" min="0" max="1000" step="0.01" inputmode="decimal"></label>
+    <label>Planejamento
+      <select id="stateInput"><option value="planned">Planejado</option><option value="open">A definir</option></select>
+    </label>
+    <fieldset>
+      <legend>Atletas</legend>
+      <p class="hint">Sem seleção: todos os integrantes, incluindo futuros atletas.</p>
+      <div id="targets" class="targets"></div>
+    </fieldset>
+    <p class="hint">Os resultados são registrados separadamente por cada atleta.</p>
+    <div class="buttons">
+      <button class="secondary" type="button" data-close="sessionDialog">Cancelar</button>
+      <button type="submit">Salvar treino</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="resultDialog">
+  <form id="resultForm">
+    <h2>Meu resultado</h2>
+    <p id="resultTitle"></p>
+    <input id="resultSession" type="hidden">
+    <label>Situação
+      <select id="resultStatus"><option value="done">Realizado</option><option value="planned">Planejado</option><option value="skipped">Não realizado</option></select>
+    </label>
+    <label>Distância realizada (km)<input id="actualInput" type="number" min="0" max="1000" step="0.01" inputmode="decimal"></label>
+    <label>Tempo (horas:minutos:segundos)<input id="durationInput" placeholder="00:45:30" inputmode="text" pattern="[0-9]{1,3}:[0-5][0-9]:[0-5][0-9]"></label>
+    <p id="pacePreview" class="hint">Pace: —</p>
+    <label>Observações<textarea id="notesInput" maxlength="20000"></textarea></label>
+    <div class="buttons">
+      <button class="secondary" type="button" data-close="resultDialog">Cancelar</button>
+      <button type="submit">Salvar meu resultado</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="stravaConfirm">
+  <h2 id="stravaConfirmTitle"></h2>
+  <p id="stravaConfirmText"></p>
+  <div class="buttons">
+    <button type="button" class="secondary" data-strava-close="stravaConfirm">Cancelar</button>
+    <button type="button" id="stravaConfirmYes">Confirmar</button>
+  </div>
+</dialog>
+
+<dialog id="stravaLinkDialog">
+  <form id="stravaLinkForm">
+    <h2>Vincular meu resultado</h2>
+    <p id="stravaLinkActivity"></p>
+    <label>Treino da agenda<select id="stravaSession" required></select></label>
+    <p id="stravaLinkNote" class="hint"></p>
+    <div class="buttons">
+      <button type="button" class="secondary" data-strava-close="stravaLinkDialog">Cancelar</button>
+      <button type="submit">Confirmar meu resultado</button>
+    </div>
+  </form>
+</dialog>
+
 <noscript>Ative o JavaScript para usar sua agenda.</noscript>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.81.1/dist/umd/supabase.js" defer></script><script type="module" src="./app.js"></script>
-</body></html>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.81.1/dist/umd/supabase.js" defer></script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

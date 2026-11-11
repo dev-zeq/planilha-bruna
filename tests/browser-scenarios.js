@@ -2,10 +2,10 @@ const $=id=>document.getElementById(id),state=window.testBackend;
 const wait=async predicate=>{for(let i=0;i<500;i++){if(predicate())return;await new Promise(r=>setTimeout(r,10));}throw Error('Timeout waiting for UI');};
 const assert=(value,text)=>{if(!value)throw Error(text);};
 const submit=id=>$(id).dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
-const login=async email=>{$('email').value=email;$('password').value='test-only-password';submit('authForm');await wait(()=>!$('appPanel').hidden);await wait(()=>document.querySelectorAll('[data-filter]').length===4);};
+const login=async email=>{$('email').value=email;$('password').value='test-only-password';submit('authForm');await wait(()=>!$('appPanel').hidden);await wait(()=>document.querySelectorAll('[data-filter]').length===3);};
 const statusSynced=()=>$('statusMessage').textContent.includes('Todas as alterações');
 try{
- if(state.invitation){await wait(()=>$('authTitle').textContent==='Definir nova senha');assert($('appPanel').hidden,'invite waits for password');$('password').value='test-only-new-password';submit('authForm');await wait(()=>!$('appPanel').hidden);assert(state.passwordSet,'invitation password saved');await wait(()=>document.querySelectorAll('[data-filter]').length===4);$('logout').click();await wait(()=>!$('authPanel').hidden);}
+ if(state.invitation){await wait(()=>$('authTitle').textContent==='Definir nova senha');assert($('appPanel').hidden,'invite waits for password');$('password').value='test-only-new-password';submit('authForm');await wait(()=>!$('appPanel').hidden);assert(state.passwordSet,'invitation password saved');await wait(()=>document.querySelectorAll('[data-filter]').length===3);$('logout').click();await wait(()=>!$('authPanel').hidden);}
  await wait(()=>$('statusMessage').textContent.includes('Entre para'));
  await login('a@example.invalid');await wait(statusSynced);
  $('new').click();assert($('sessionDialog').open,'new dialog');$('titleInput').value='<img src=x onerror=alert(1)>';$('trainingDate').value=new Date().toISOString().slice(0,10);$('plannedInput').value='10';submit('sessionForm');
@@ -14,14 +14,14 @@ try{
  document.querySelector('[data-result]').click();$('actualInput').value='10';$('durationInput').value='00:40:00';submit('resultForm');await wait(()=>state.results.length===1);await wait(statusSynced);
  assert(state.results[0].user_id==='a','result identity A');
  // Private Strava panel and explicit result link use the current athlete and version.
- $('stravaPanel').open=true;await wait(()=>$('stravaActivities').textContent.includes('Corrida privada A'));
+ document.querySelector('[data-tab="strava"]').click();assert(!$('tabStrava').hidden&&$('tabWeek').hidden,'Strava tab shown');await wait(()=>$('stravaActivities').textContent.includes('Corrida privada A'));
  $('stravaSync').click();await wait(()=>$('stravaMessage').textContent.includes('verificada'));assert(state.stravaCalls.some(x=>x.action==='sync'&&x.uid==='a'),'sync tied to A');
  document.querySelector('[data-strava-link]').click();await wait(()=>$('stravaLinkDialog').open);$('stravaSession').value=state.sessions[0].id;submit('stravaLinkForm');await wait(()=>!$('stravaLinkDialog').open);await wait(()=>state.results[0].source==='strava');assert(state.stravaCalls.some(x=>x.action==='link'&&x.version===1&&x.uid==='a'),'explicit link uses own result CAS');
  // Warmup/main/cooldown sum to one result; a second athlete remains independent.
  for(const input of document.querySelectorAll('[data-strava-select]'))input.click();
  assert($('stravaSelected').textContent.includes('3 atividade(s)'),'three activities selected');assert($('stravaSelected').textContent.includes('16 km'),'combined distance preview');
  $('stravaGroup').click();await wait(()=>$('stravaLinkDialog').open);$('stravaSession').value=state.sessions[0].id;submit('stravaLinkForm');await wait(()=>!$('stravaLinkDialog').open);assert(state.results.length===1,'grouping does not duplicate results');assert(state.results[0].actual_km===16&&state.results[0].duration_seconds===4470,'aggregate metrics from three source activities');assert(state.stravaCalls.some(x=>x.action==='link'&&x.activity_ids?.length===3&&x.version===2),'group link uses version and activity list');
- $('stravaPanel').open=false;
+ document.querySelector('[data-tab="week"]').click();
  $('logout').click();await wait(()=>!$('authPanel').hidden);await login('b@example.invalid');await wait(statusSynced);
  await wait(()=>$('stravaConnection').textContent.includes('Nenhuma conta'));assert(!$('stravaActivities').textContent.includes('Corrida privada A'),'B cannot see A private panel after account change');assert(!$('stravaConnect').disabled,'B can connect own Strava');assert(document.querySelectorAll('.entry').length===1,'B sees shared session');assert(state.results.length===1,'B not automatically complete');assert(document.querySelector('[data-result]').textContent==='Concluir treino','B owns independent action');
  document.querySelector('[data-edit]').click();$('titleInput').value='B updated';submit('sessionForm');await wait(()=>state.sessions[0].title==='B updated');await wait(statusSynced);
