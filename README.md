@@ -58,3 +58,9 @@ Sem build nem dependências npm. `npm test` executa os testes unitários; `npm r
 As fontes SQL em `supabase/` registram as migrações aplicadas pelo conector no projeto remoto. Não reaplicar indiscriminadamente nem executar em outro projeto. Conferir `supabase_migrations.schema_migrations` antes de qualquer retomada.
 
 CI em `.github/workflows/tests.yml`. Publicação permanece por main no GitHub Pages e `CNAME` permanece `treinos.paceplus.app`. Atualizações de app devem incrementar o nome do cache em `sw.js` para instalar um shell novo e consistente.
+
+### Strava automático e gravações separadas — versão 2.2.0
+
+Depois da ativação pelo responsável, corridas novas/alterações no Strava serão recebidas pelo servidor, mesmo com o Treinos fechado. Aguarde o relógio/Zepp/Garmin terminar de enviar ao Strava. O processamento pode levar alguns minutos e depende da disponibilidade/limites do Strava; o botão de sincronização manual continua disponível.
+
+Se o relógio gravou aquecimento, treino principal e desaquecimento separadamente, marque todas as partes em **Meu Strava**, toque em **Vincular atividades selecionadas**, confira os totais e confirme o treino da agenda. O resultado reúne distância e tempo em movimento, com pace calculado pelos totais. Não há agrupamento automático de sessões diferentes nem conclusão dos outros atletas.

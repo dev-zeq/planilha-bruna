@@ -355,3 +355,35 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Funcionando e verificado para ambos: login individual, autorização própria, importação manual, reexecução idempotente, resultado individual persistente e isolamento. Importação é dos últimos 30 dias, acionada pelo botão; não há sincronização contínua/webhooks ainda.
 - Pendências reais: testes simultâneos no iPhone/Android/computador; offline e recuperação de senha nos aparelhos; webhooks para mudanças/exclusões/revogação no Strava; conexão Renato quando disponível. Não anunciar essas pendências como concluídas.
 - Teste nos celulares: abrir treinos.paceplus.app, aplicar Nova versão disponível se aparecer, confirmar versão 2.1.0; cada um entrar com sua conta; abrir Meu Strava → Sincronizar atividades; usar Vincular a um treino somente para o próprio resultado correspondente. A agenda é compartilhada; dados originados da API ficam individuais.
+
+
+## 2026-11-11 — Etapa 17: sincronização automática em implementação
+
+- Solicitação do responsável: automatizar importação sem o botão. Branch feat/strava-auto-sync criada da main.
+- Consultadas fontes oficiais Strava Webhooks e Supabase Cron/pg_net/background tasks. Projeto dedicado inspecionado; habilitados pg_cron/pg_net somente no Treinos.
+- Aplicadas migrações strava_durable_automatic_sync e strava_automation_epoch_guard. Fila privada persistente com deduplicação, claims/leases, retries, limpeza, proteção de época da conexão e processamento de exclusão/revogação. Callback e worker usam capacidades derivadas do segredo existente e nunca são retornados ao frontend. Tokens continuam no Vault.
+- Adicionados servidor de webhook/worker e ativação restrita ao responsável; recebimento ACK rápido, processamento em background e recuperação por Cron quando houver trabalho pendente. Assinatura Strava ainda NÃO ativada; não anunciar automação funcionando.
+- Testes locais de servidor, autenticação, challenge, callback, ACK independente da API, repetição, limite 429, proprietário, revogação e worker passaram. SQL real com fixtures revertidas aprovou fila, claims exclusivos, retries, atualização individual, exclusão, época e isolamento. CI de navegador/Deno ainda pendente.
+- Nova informação do usuário durante esta etapa: Amazfit grava aquecimento, principal e desaquecimento em atividades separadas. Incluir vínculo de múltiplas atividades ao mesmo resultado, somando distância e tempo em movimento e calculando pace ponderado. Agrupamento exige confirmação, sem juntar automaticamente sessões diferentes.
+- Arquivos em desenvolvimento: supabase/strava-automation*.sql, supabase/functions/strava/automation.mjs, logic.mjs, index.ts; strava-client.mjs, app.js, index.html, sw.js, package.json, tests/strava-automation* e testes existentes ajustados. Commit de checkpoint desta etapa registra fontes; publicação só após validar também agrupamento.
+
+
+## 2026-11-11 — Etapa 18: aquecimento, principal e desaquecimento agrupáveis
+
+- Commit de checkpoint da automação: 1cc3db166d359809c06dbadf008c7f594a253da5 na branch feat/strava-auto-sync.
+- Aplicadas migrações strava_multiple_activities_per_result e strava_group_notes_without_stale_count. Criada relação privada por atleta entre resultado e várias atividades; vínculos individuais existentes preservados. Campo antigo strava_activity_id mantido nulo por compatibilidade; função antiga de vínculo único delega ao novo fluxo.
+- Resultado agrupado soma metros antes de arredondar quilômetros e soma segundos em movimento; pace calculado pelos totais. Limite de 10 atividades distintas por vínculo; unicidade impede contar a mesma atividade em dois treinos. Edição protegida por versão. Exclusão/correção de componente recalcula o grupo; ajustes manuais de métricas são preservados.
+- Interface em desenvolvimento 2.2.0: seleção por checkbox, prévia dos totais e confirmação de agrupamento ao treino escolhido. Não há vínculo automático de corridas a treinos da agenda.
+- Teste SQL real (fixtures revertidas) aprovou três atividades → um resultado, pace ponderado, CAS, proteção contra outro atleta, proteção contra dupla contagem, recálculo após excluir componente e compatibilidade do cliente anterior. Testes de automação reexecutados com novo modelo: sucesso. Testes locais e sintaxe: aprovados.
+- Falha de sintaxe detectada pelo check local (parêntese excedente no filtro de seleção) corrigida antes do commit/publicação. CI/Deno/navegador com seleção múltipla ainda pendentes.
+- Fontes: supabase/strava-multiple-activities.sql, supabase/strava-group-notes.sql, strava-client.mjs, index.html, styles.css, servidor/automation.mjs/logic.mjs e testes de agrupamento/automação.
+- Assinatura automática ainda não cadastrada no Strava; produção permanece 2.1.0 enquanto a branch passa pela validação. Próximo passo: CI, revisão de segurança, publicar servidor/interface, ativar webhook e testar agrupamento real de terça-feira com seleção correta.
+
+## 2026-11-11 — Etapa 19: validação da automação e agrupamento antes de publicar
+
+- PR #3: https://github.com/dev-zeq/planilha-bruna/pull/3. CI 43082098786 aprovado no commit de14483e1492e633070a2000b8adb68e1a70a06e: core/servidor, webhook/worker, Deno com lockfile congelado e Chrome móvel/desktop, incluindo seleção de três gravações com soma em um resultado e CAS.
+- Corrigido erro de tipo Deno no parâmetro background, detectado no CI dos checkpoints; o callback tem default tipado como função. Nenhuma função defeituosa foi publicada por essa falha.
+- Advisor: removidos índices duplicados/obsoletos do campo legado Strava e criado índice da FK de autorizações ao grupo (strava_group_indexes_cleanup). Tabelas privadas com RLS sem policies são intencionais. pg_net relata metadata da extensão em public, mas inspeção confirmou as 12 funções no schema net, não no public; extensão não relocatable, sem tentativa de mover/desativar a plataforma. Proteção de senhas vazadas permanece desativada, aviso de Auth já existente.
+- Referências: https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public e https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection.
+- Aplicada strava_automation_live_probe: após ativar, agenda a releitura de uma atividade própria existente na fila, sem inventar atividade ou alterar registro no Strava. O Cron real fará o processamento para validar recuperação; worker acorda somente com trabalho pendente. Timeout HTTP do worker ajustado para 5s, separado do ACK de webhook/challenge de 2s.
+- Documentação de uso e arquitetura atualizada no README.md e docs/strava.md. Pendentes: CI do último ajuste, publicar servidor/interface, ativar assinatura, conferir processamento e agrupamento real de terça-feira. Não marcar a assinatura como ativa até confirmar no Strava.

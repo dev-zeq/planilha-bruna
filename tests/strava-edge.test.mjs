@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createHandler,normalizeActivity,validateTokens,linkInput,sha256,APP_ORIGIN} from '../supabase/functions/strava/logic.mjs';
+import {createHandler,normalizeActivity,validateTokens,linkInput,linkManyInput,sha256,APP_ORIGIN} from '../supabase/functions/strava/logic.mjs';
 const uid='a1000000-0000-4000-8000-000000000001',session='a2000000-0000-4000-8000-000000000001';
 const now=1794412800000;
 const tokens={access_token:'FAKE-ACCESS',refresh_token:'FAKE-REFRESH',expires_at:Math.floor(now/1000)+3600};
@@ -17,7 +17,7 @@ function fixture(options={}){
 test('Strava auth and CORS reject outside callers before any token access',async()=>{
  const f=fixture();assert.equal((await f.request({action:'sync'},{Authorization:''})).status,401);assert.equal((await f.request({action:'sync'},{Origin:'https://attacker.invalid'})).status,403);assert.equal((await f.request({}, {},'GET')).status,405);assert.equal((await fixture({outsider:true}).request({action:'status'})).status,403);assert.equal(f.calls.length,0);assert.equal(f.network.length,0);
 });
-test('Strava status safe while credentials are not configured',async()=>{const f=fixture({unconfigured:true});const r=await f.request({action:'status'});assert.deepEqual(await r.json(),{configured:false,connection:null});assert.equal((await f.request({action:'start'})).status,503);assert.equal(f.network.length,0);});
+test('Strava status safe while credentials are not configured',async()=>{const f=fixture({unconfigured:true});const r=await f.request({action:'status'});assert.deepEqual(await r.json(),{configured:false,connection:null,automatic:null,can_enable_auto:false});assert.equal((await f.request({action:'start'})).status,503);assert.equal(f.network.length,0);});
 test('OAuth start persists only hash tied to authenticated user and fixed callback',async()=>{
  const f=fixture();const body=await (await f.request({action:'start',user_id:'attacker'})).json();const u=new URL(body.url);assert.equal(u.searchParams.get('redirect_uri'),APP_ORIGIN+'/');assert.equal(u.searchParams.get('scope'),'read,activity:read_all');assert.equal(f.calls[0].args.p_user,uid);assert.equal(f.calls[0].args.p_hash,await sha256(body.state));assert.notEqual(f.calls[0].args.p_hash,body.state);
 });
@@ -34,3 +34,5 @@ test('Provider revocation cleans API data and errors never echo tokens',async()=
 test('Rate limit stops sync and releases lease without importing partial data',async()=>{const f=fixture({fetcher:async()=>new Response('{}',{status:429})});assert.equal((await f.request({action:'sync'})).status,429);assert(!f.calls.some(c=>c.name==='strava_server_import'));assert.equal(f.calls.at(-1).args.p_release,true);});
 test('Activity normalization excludes GPS and nonrunning sports; invalid data rejected',()=>{assert.equal(normalizeActivity({...activity,sport_type:'Ride'}),null);assert.throws(()=>normalizeActivity({...activity,distance:-1}));assert.throws(()=>validateTokens({...tokens,expires_at:1},2));assert.deepEqual(linkInput({activity_id:12,session_id:session,version:0}),{activity:12,session,version:0});assert.throws(()=>linkInput({activity_id:12,session_id:session,version:-1}));});
 test('Disconnect requires confirmation and invokes cleanup only for authenticated user',async()=>{const f=fixture();assert.equal((await f.request({action:'disconnect'})).status,400);assert.equal((await f.request({action:'disconnect',confirm:true,user_id:'attacker'})).status,200);assert.equal(f.calls.at(-1).args.p_user,uid);assert.equal(f.calls.at(-1).name,'strava_server_disconnect');});
+
+test('Grouping accepts own activity IDs as bounded distinct list and preserves result version',async()=>{const f=fixture();const data=await(await f.request({action:'link',activity_ids:[12,13,14],session_id:session,version:3,user_id:'attacker'})).json();assert.deepEqual(data,{linked:true});const call=f.calls.find(x=>x.name==='strava_server_link_many');assert.deepEqual(call.args,{p_user:uid,p_activities:[12,13,14],p_session:session,p_version:3});assert.throws(()=>linkManyInput({activity_ids:[12,12],session_id:session,version:0}));assert.throws(()=>linkManyInput({activity_ids:Array.from({length:11},(_,i)=>i+1),session_id:session,version:0}));});

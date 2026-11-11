@@ -1,3 +1,4 @@
+import {createAutomation} from './automation.mjs';
 export const APP_ORIGIN='https://treinos.paceplus.app';
 export const CALLBACK=APP_ORIGIN+'/';
 export const RUN_TYPES=new Set(['Run','TrailRun','VirtualRun']);
@@ -20,6 +21,11 @@ export function linkInput(body){
  if(!Number.isSafeInteger(activity)||activity<=0||!Number.isSafeInteger(version)||version<0)throw new PublicError('Atividade ou versão inválida.');
  return {activity,version,session:uuid(body.session_id)};
 }
+export function linkManyInput(body){
+ const ids=body.activity_ids===undefined?[body.activity_id]:body.activity_ids;
+ if(!Array.isArray(ids)||ids.length<1||ids.length>10||ids.some(x=>!Number.isSafeInteger(x)||x<=0)||new Set(ids).size!==ids.length)throw new PublicError('Selecione de uma a dez atividades distintas.');
+ const v=linkInput({...body,activity_id:ids[0]});return {activities:ids,version:v.version,session:v.session};
+}
 export function dbError(error){
  if(!error)return;
  const m=String(error.message||'');
@@ -31,33 +37,36 @@ export function dbError(error){
 export async function sha256(text,cryptoAPI=crypto){return Array.from(new Uint8Array(await cryptoAPI.subtle.digest('SHA-256',new TextEncoder().encode(text))),n=>n.toString(16).padStart(2,'0')).join('');}
 export function newState(cryptoAPI=crypto){return Array.from(cryptoAPI.getRandomValues(new Uint8Array(32)),n=>n.toString(16).padStart(2,'0')).join('');}
 
-export function createHandler({createClient,env,fetcher=fetch,cryptoAPI=crypto,now=()=>Date.now()}){
+export function createHandler({createClient,env,fetcher=fetch,cryptoAPI=crypto,now=()=>Date.now(),background=task=>{void task.catch(()=>{});}}){
  const url=env('SUPABASE_URL'),key=env('SUPABASE_SERVICE_ROLE_KEY')||JSON.parse(env('SUPABASE_SECRET_KEYS')||'{}').default;
  const clientId=env('STRAVA_CLIENT_ID'),clientSecret=env('STRAVA_CLIENT_SECRET');
  const configured=Boolean(clientId&&/^\d+$/.test(clientId)&&clientSecret);
  const admin=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
  const rpc=async(name,args)=>{const r=await admin.rpc(name,args);dbError(r.error);return r.data;};
- async function provider(path,options={},invalidRefresh=false){
+ async function provider(path,options={},invalidRefresh=false,missingOkay=false){
   const response=await fetcher('https://www.strava.com'+path,{...options,signal:AbortSignal.timeout(12000)});
+  if(response.status===404&&missingOkay)return null;
   if(response.status===429)throw new PublicError('Limite do Strava atingido. Aguarde a próxima janela de sincronização.',429);
   if(response.status===401||(invalidRefresh&&response.status===400))throw new PublicError('A conexão com o Strava foi revogada. Conecte novamente.',401);
   if(!response.ok)throw new PublicError('O Strava não concluiu a operação. Tente novamente mais tarde.',502);
   return response.json();
  }
  const postToken=body=>provider('/oauth/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:clientId,client_secret:clientSecret,...body})},body.grant_type==='refresh_token');
- async function withToken(uid,fn){
-  const lease=cryptoAPI.randomUUID();let acquired=false;
+ async function withToken(uid,fn,expectedEpoch=null){
+  const lease=cryptoAPI.randomUUID();let acquired=false,connectionEpoch=expectedEpoch;
   try{
-   let tokens=await rpc('strava_server_token',{p_user:uid,p_lease:lease});acquired=true;
+   let tokens=await rpc('strava_server_token',{p_user:uid,p_lease:lease});acquired=true;connectionEpoch=connectionEpoch||tokens._connection_epoch;
    if(tokens.expires_at<Math.floor(now()/1000)+120){tokens=validateTokens(await postToken({grant_type:'refresh_token',refresh_token:tokens.refresh_token}),Math.floor(now()/1000));await rpc('strava_server_token',{p_user:uid,p_lease:lease,p_update:tokens});}
    return await fn(tokens.access_token,lease);
   }catch(e){
    // A provider 401 means consent was withdrawn; erase imported API data/tokens.
-   if(e instanceof PublicError&&e.status===401)await rpc('strava_server_disconnect',{p_user:uid});
+   if(e instanceof PublicError&&e.status===401){if(connectionEpoch)await rpc('strava_server_disconnect_if',{p_user:uid,p_epoch:connectionEpoch});else await rpc('strava_server_disconnect',{p_user:uid});}
    throw e;
   }finally{if(acquired){try{await rpc('strava_server_token',{p_user:uid,p_lease:lease,p_release:true});}catch{/* lease expires automatically */}}}
  }
+ const automation=createAutomation({rpc,provider,withToken,env,cryptoAPI,now,background});
  return async request=>{
+  const automatic=await automation.route(request);if(automatic)return automatic;
   const origin=request.headers.get('Origin');
   const headers={'Content-Type':'application/json','Cache-Control':'no-store','Vary':'Origin','Access-Control-Allow-Origin':APP_ORIGIN,'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS'};
   const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});
@@ -77,9 +86,10 @@ export function createHandler({createClient,env,fetcher=fetch,cryptoAPI=crypto,n
    let body;try{body=JSON.parse(text);}catch{throw new PublicError('Pedido inválido.');}if(!body||typeof body!=='object'||Array.isArray(body))throw new PublicError('Pedido inválido.');
    if(body.action==='status'){
     const connection=await admin.from('training_strava_connections').select('athlete_id,athlete_name,connected_at,last_synced_at').eq('user_id',uid).maybeSingle();dbError(connection.error);
-    return reply({configured,connection:connection.data});
+    return reply({configured,connection:connection.data,automatic:await automation.status(uid),can_enable_auto:uid==='e4bf523a-a9e5-4c12-beec-d3218360f733'});
    }
    if(!configured)throw new PublicError('O responsável ainda precisa configurar o aplicativo Strava.',503);
+   if(body.action==='enable_auto')return reply(await automation.enable(uid));
    if(body.action==='start'){
     const state=newState(cryptoAPI);await rpc('strava_server_state',{p_user:uid,p_hash:await sha256(state,cryptoAPI)});
     const authURL=new URL('https://www.strava.com/oauth/authorize');
@@ -109,7 +119,7 @@ export function createHandler({createClient,env,fetcher=fetch,cryptoAPI=crypto,n
     });return reply({imported,days:30});
    }
    if(body.action==='link'){
-    const v=linkInput(body);await rpc('strava_server_link',{p_user:uid,p_activity:v.activity,p_session:v.session,p_version:v.version});return reply({linked:true});
+    const v=linkManyInput(body);await rpc('strava_server_link_many',{p_user:uid,p_activities:v.activities,p_session:v.session,p_version:v.version});return reply({linked:true});
    }
    if(body.action==='disconnect'){
     if(body.confirm!==true)throw new PublicError('Confirme a desconexão e a remoção dos dados importados.');
