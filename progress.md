@@ -6,7 +6,7 @@ Atualizado em: 2026-11-11
 
 - **Repositório:** `dev-zeq/planilha-bruna`
 - **Site/PWA:** https://treinos.paceplus.app
-- **Objetivo:** planejamento de treinos compartilhado entre dois atletas, com contas individuais e resultados separados.
+- **Objetivo:** planejamento de treinos compartilhado entre três atletas (Ezequiel, Bruna e Renato Cirino), com contas individuais e resultados separados.
 - **Hospedagem:** GitHub Pages.
 - **Backend dedicado:** Supabase, projeto `planilha-treinos` (referência `hzcqlygvzxxnvpywzppp`), região São Paulo, plano gratuito.
 - **Integração futura:** Strava, usando autorização individual de cada atleta.
@@ -24,7 +24,7 @@ Atualizado em: 2026-11-11
 
 ## Ponto atual
 
-**Etapa seguinte: conectar o site/PWA ao Supabase e implementar autenticação das duas contas.**
+**Etapa seguinte: conectar o site/PWA ao Supabase e implementar autenticação das três contas (Ezequiel, Bruna e Renato Cirino).**
 
 A experiência instalada foi testada, mas **a sincronização entre celulares não está pronta**. A planilha ainda utilizava armazenamento local na última verificação. Não assumir que treinos registrados em um aparelho aparecem no outro.
 
@@ -33,9 +33,9 @@ A experiência instalada foi testada, mas **a sincronização entre celulares n�
 - [ ] Inspecionar a versão atual do site e identificar o formato/chaves de armazenamento local dos treinos.
 - [ ] Preparar **backup e importação idempotente** dos treinos locais antes de alterar a persistência; evitar perda e duplicação.
 - [ ] Validar o esquema real do Supabase, nomes das tabelas, relacionamentos e políticas RLS com as contas autenticadas.
-- [ ] Implementar login individual e associação segura dos dois usuários ao mesmo grupo de treino.
+- [ ] Implementar login individual e associação segura dos três usuários ao mesmo grupo de treino (com suporte para incluir mais integrantes futuramente).
 - [ ] Conectar leitura/escrita da agenda compartilhada ao Supabase; manter os resultados separados por usuário.
-- [ ] Testar criação, edição e conclusão de treinos em ambos os aparelhos, incluindo atualização após recarregar.
+- [ ] Testar criação, edição e conclusão de treinos nas três contas e respectivos aparelhos, incluindo atualização após recarregar.
 - [ ] Testar isolamento de dados e permissões com usuário não pertencente ao grupo.
 - [ ] Após testes, implementar integração com Strava usando OAuth e segredos no servidor (nunca expor tokens privados no navegador).
 - [ ] Associar atividades importadas aos treinos planejados com confirmação ou regras de correspondência verificáveis.
@@ -55,8 +55,10 @@ A experiência instalada foi testada, mas **a sincronização entre celulares n�
 | Data | Etapa | Resultado |
 |---|---|---|
 | 2026-11-11 | PWA | Usuário confirmou instalação e reabertura com dados locais preservados |
-| 2026-11-11 | Arquitetura | Definidas duas contas individuais, calendário compartilhado e resultados separados |
+| 2026-11-11 | Arquitetura | Definidas contas individuais para Ezequiel, Bruna e Renato Cirino, calendário compartilhado e resultados separados |
 | 2026-11-11 | Supabase | Projeto `planilha-treinos` criado; estrutura inicial e RLS relatadas como aplicadas/verificadas |
+| 2026-11-11 | Escopo | Renato Cirino incluído como terceiro atleta planejado; cadastro/login ainda não criado |
+| 2026-11-11 | Segurança | Corrigidas políticas de treinos para exigir vínculo ao grupo específico; migração aplicada, testes de usuário ainda pendentes |
 | 2026-11-11 | Documentação | Registro inicial criado neste `progress.md` |
 
 ## Como manter este documento
