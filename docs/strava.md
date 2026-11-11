@@ -56,3 +56,15 @@ O painel deste aplicativo confirmou capacidade para 10 atletas. A conexão inici
 6. Testar em celular e computador. Registrar o resultado real em progress.md; não marcar concluído só pelo CI simulado.
 
 Credenciais salvas em 11/11/2026 após autorização explícita do responsável. O responsável ainda precisa confirmar as permissões de leitura no fluxo OAuth de cada atleta, com contas correspondentes no Treinos e no Strava.
+
+## Versão 2.2.0 — automação e atividades separadas (em validação)
+
+O PR #3 adiciona webhook oficial para os atletas já conectados. Novas corridas e alterações chegam a uma fila privada persistente. O callback confirma rapidamente; o processamento consulta o Strava com os tokens do próprio atleta. Falhas/limites voltam à fila; um Cron verifica trabalho pendente a cada minuto, sem chamadas HTTP quando a fila está vazia. Exclusões e revogações removem dados da API, preservando a agenda e resultados manuais. Eventos de uma autorização antiga não podem apagar uma conexão nova.
+
+Ativar uma vez na conta Ezequiel em **Meu Strava → Ativar sincronização automática**. A ação é verificada no servidor e registra somente a assinatura do Client ID 296243, sem tocar em outra aplicação ou nos tokens do Pace Plus. O cadastro envia uma verificação ao callback; capacidades e URL do worker ficam no servidor/Vault e nunca chegam à interface. Após ativar, o servidor agenda a releitura de uma atividade própria existente para verificar fila/Cron sem criar treinos falsos.
+
+**Aquecimento + principal + desaquecimento:** marque as atividades em Meu Strava e use **Vincular atividades selecionadas**. Revise a soma e escolha o treino da agenda. Até dez gravações do mesmo atleta podem formar um único resultado. Quilômetros são somados a partir dos metros originais; duração soma apenas tempo em movimento; pace = tempo total / distância total. A mesma atividade não pode ser contabilizada em dois treinos. Um evento novo importa uma corrida, mas não escolhe nem conclui automaticamente o treino da agenda.
+
+Vínculos anteriores de uma atividade são preservados. O servidor antigo e a PWA 2.1.0 continuam compatíveis durante a atualização. Correções/exclusões de componentes atualizam o total já vinculado; métricas ajustadas manualmente pelo usuário não são sobrescritas silenciosamente. Dados e vínculos da API permanecem privados por atleta.
+
+Validação: testes de servidor/webhook, SQL com fixtures revertidas e CI com seleção de três gravações e resultado único. A confirmação real da assinatura e do processamento em segundo plano é registrada em progress.md após a ativação; receber a próxima corrida real do Strava é um teste adicional distinto.

@@ -49,6 +49,7 @@ export function createAutomation({rpc,provider,withToken,env,cryptoAPI=crypto,no
    const subscription=list[0]||await provider('/api/v3/push_subscriptions',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:clientId,client_secret:secret,callback_url:callback,verify_token:verify})});
    if(!Number.isSafeInteger(subscription.id)||subscription.id<=0)throw new PublicError('Cadastro automático inválido.',502);
    await rpc('strava_server_auto_config',{p_subscription:subscription.id});
+   await rpc('strava_server_probe',{p_user:uid});
    return {enabled:true};
   },
   async route(request){
