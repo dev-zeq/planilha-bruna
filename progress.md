@@ -194,3 +194,9 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 
 
 
+
+
+### Etapa 6 — preservação do fluxo de senha
+
+- Revisão do PWA: o primeiro service worker não força recarregamento; troca de controlador também não recarrega enquanto o usuário define a senha. Isso evita perder o contexto de convite/recuperação depois que o SDK consome o hash.
+- Arquivo app.js. A suíte de convite está no CI da etapa; sem novos segredos ou mudanças de banco.
