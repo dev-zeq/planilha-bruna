@@ -1,4 +1,4 @@
-const CACHE='treinos-shell-v2.5.0';
+const CACHE='treinos-shell-v2.6.0';
 const SDK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.81.1/dist/umd/supabase.js';
 const ASSETS=['./','./index.html','./styles.css','./app.js','./core.mjs','./strava-client.mjs','./icon-512.png','./manifest.webmanifest','./icon.svg',SDK];
 const urls=ASSETS.map(p=>new URL(p,self.registration.scope).href);

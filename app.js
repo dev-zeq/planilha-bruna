@@ -1,5 +1,5 @@
 import {setupStrava,takeStravaReturn} from './strava-client.mjs';
-import {LEGACY_KEY, PERIODS, escapeHTML as esc, isoLocal, monday, durationSeconds, durationText, paceText, numberOrNull, validateLegacy, legacyOperations, legacyUUID, projectSnapshot, lockWithTakeover} from './core.mjs';
+import {LEGACY_KEY, PERIODS, escapeHTML as esc, isoLocal, monday, durationSeconds, durationText, paceText, numberOrNull, validateLegacy, legacyOperations, legacyUUID, projectSnapshot, lockWithTakeover, sessionState, SESSION_STATES} from './core.mjs';
 
 const stravaReturn=takeStravaReturn();
 const $=id=>document.getElementById(id);
@@ -60,9 +60,9 @@ function updateSync(){
   :['Em dia','ok'];
  el.hidden=false;el.textContent=text;el.className='sync '+kind;
 }
-function sessionCard(s,result,own,stravaPrivate){
- const done=result?.status==='done';
- const tag=s.pending?'Aguardando envio':s.state==='open'?'A definir':'';
+function sessionCard(s,result,own,stravaPrivate,todayISO){
+ const done=result?.status==='done',state=sessionState(s,result,todayISO);
+ const tag=s.pending?'Aguardando envio':SESSION_STATES[state];
  const meta=[s.period!=='Não definido'?s.period:'',s.planned_km!=null?fmtKm(s.planned_km)+' km planejados':''].filter(Boolean).join(' · ');
  let outcome='';
  if(done){
@@ -77,7 +77,7 @@ function sessionCard(s,result,own,stravaPrivate){
  }else if(result?.status==='skipped')outcome=`<p class="result skip">Não realizado${result.pending?' · envio pendente':''}</p>`;
  else if(!own)outcome='<p class="result none">Ainda não registrado</p>';
  if(result?.notes)outcome+=`<p class="notes">${esc(result.notes)}</p>`;
- return `<article class="entry ${done?'done':s.state==='open'?'open':'plan'}"><div class="head"><strong>${esc(s.title)}</strong>${tag?`<span class="tag">${tag}</span>`:''}<details class="menu"><summary aria-label="Mais ações">⋯</summary><div><button class="secondary" data-edit="${s.id}">Editar</button><button class="danger" data-delete="${s.id}">Excluir</button></div></details></div>${meta?`<p class="meta">${esc(meta)}</p>`:''}${s.description?`<p class="desc">${esc(s.description)}</p>`:''}${outcome}${own?`<button class="full${result&&result.status!=='planned'?' secondary':''}" data-result="${s.id}">${done?'Meu resultado':'Concluir treino'}</button>`:''}</article>`;
+ return `<article class="entry ${state}"><div class="head"><strong>${esc(s.title)}</strong>${tag?`<span class="tag${s.pending?'':' '+state}">${tag}</span>`:''}<details class="menu"><summary aria-label="Mais ações">⋯</summary><div><button class="secondary" data-edit="${s.id}">Editar</button><button class="danger" data-delete="${s.id}">Excluir</button></div></details></div>${meta?`<p class="meta">${esc(meta)}</p>`:''}${s.description?`<p class="desc">${esc(s.description)}</p>`:''}${outcome}${own?`<button class="full${(result&&result.status!=='planned')||state==='planned'||state==='open'?' secondary':''}" data-result="${s.id}">${done?'Meu resultado':'Concluir treino'}</button>`:''}</article>`;
 }
 function render(){
  if(!user||!group)return;
@@ -102,7 +102,8 @@ function render(){
   return {date,iso,rows,name:weekdayLong.format(date).replace('-feira','')};
  });
  setHTML($('strip'),days.map(d=>{
-  const state=!d.rows.length?'':d.rows.every(s=>resultOf(s)?.status==='done')?'ok':'todo';
+  const states=d.rows.map(s=>sessionState(s,resultOf(s),todayISO));
+  const state=!states.length?'':states.includes('late')?'late':states.every(x=>x==='done'||x==='skipped')?'ok':'todo';
   const label=`${d.name} ${d.date.getDate()}: ${d.rows.length?d.rows.length+' treino(s)':'sem treino, tocar para planejar'}`;
   return `<button data-day="${d.iso}" class="${state}${d.iso===todayISO?' today':''}" aria-label="${esc(label)}">${esc(weekdayShort.format(d.date).replace('.',''))}<b>${d.date.getDate()}</b><i></i></button>`;
  }).join(''));
@@ -110,7 +111,7 @@ function render(){
  const emptyText=empty.length===7?'Nenhum treino nesta semana. Toque em um dia ou em Novo treino para planejar.'
   :empty.length?cap(empty.length>1?empty.slice(0,-1).join(', ')+' e '+empty.at(-1):empty[0])+' sem treino'
   :'';
- setHTML($('days'),days.filter(d=>d.rows.length).map(d=>`<section class="day" id="day-${d.iso}"><h2>${d.iso===todayISO?'Hoje, ':''}${esc(d.iso===todayISO?d.name:cap(d.name))} ${d.date.getDate()}</h2>${d.rows.map(s=>sessionCard(s,resultOf(s),own,stravaPrivate)).join('')}</section>`).join('')+(emptyText?`<p class="empty-days">${esc(emptyText)}</p>`:''));
+ setHTML($('days'),days.filter(d=>d.rows.length).map(d=>`<section class="day" id="day-${d.iso}"><h2>${d.iso===todayISO?'Hoje, ':''}${esc(d.iso===todayISO?d.name:cap(d.name))} ${d.date.getDate()}</h2>${d.rows.map(s=>sessionCard(s,resultOf(s),own,stravaPrivate,todayISO)).join('')}</section>`).join('')+(emptyText?`<p class="empty-days">${esc(emptyText)}</p>`:''));
  if(scrollToToday){
   scrollToToday=false;
   const first=days.find(d=>d.rows.length);
