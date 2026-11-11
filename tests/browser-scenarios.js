@@ -18,6 +18,8 @@ try{
  $('stravaSync').click();await wait(()=>$('stravaMessage').textContent.includes('verificada'));assert(state.stravaCalls.some(x=>x.action==='sync'&&x.uid==='a'),'sync tied to A');
  document.querySelector('[data-strava-link]').click();await wait(()=>$('stravaLinkDialog').open);$('stravaSession').value=state.sessions[0].id;submit('stravaLinkForm');await wait(()=>!$('stravaLinkDialog').open);await wait(()=>state.results[0].source==='strava');assert(state.stravaCalls.some(x=>x.action==='link'&&x.version===1&&x.uid==='a'),'explicit link uses own result CAS');
  // Warmup/main/cooldown sum to one result; a second athlete remains independent.
+ // The link action is still finishing; selections are ignored until the panel is idle again.
+ await wait(()=>!$('stravaSync').disabled);
  for(const input of document.querySelectorAll('[data-strava-select]'))input.click();
  assert($('stravaSelected').textContent.includes('3 atividade(s)'),'three activities selected');assert($('stravaSelected').textContent.includes('16 km'),'combined distance preview');
  $('stravaGroup').click();await wait(()=>$('stravaLinkDialog').open);$('stravaSession').value=state.sessions[0].id;submit('stravaLinkForm');await wait(()=>!$('stravaLinkDialog').open);assert(state.results.length===1,'grouping does not duplicate results');assert(state.results[0].actual_km===16&&state.results[0].duration_seconds===4470,'aggregate metrics from three source activities');assert(state.stravaCalls.some(x=>x.action==='link'&&x.activity_ids?.length===3&&x.version===2),'group link uses version and activity list');
