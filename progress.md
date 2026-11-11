@@ -445,3 +445,47 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Acrescentados quadro de PRs/commits, escopo de infraestrutura, funcionalidades verificadas, testes, uso nos celulares, problemas corrigidos e lista explícita do que ainda falta verificar. Dados de atividades privadas, segredos e senhas não foram incluídos.
 - Confirmadas as execuções 43085048427 (Tests) e 43085047997 (Pages), ambas aprovadas no último commit documental anterior. Esta etapa modifica apenas progress.md; não altera código, Supabase ou dados dos atletas e não requer repetir testes funcionais.
 - Arquivo registrado em commit próprio na main. Próxima ação: validar a próxima corrida nova recebida automaticamente e então atualizar esta referência com a evidência; manter as demais pendências até confirmação real.
+
+
+## 2026-11-11 — Etapa 23: interface mobile por atleta e correções de sincronização (2.3.0)
+
+- Revisão do repositório feita com Claude Code a pedido do responsável; decisões de interface tomadas com ele em conversa. PR dev-zeq/planilha-bruna#5.
+- Cada conta abre na própria planilha; a de outro atleta aparece ao tocar no nome. Filtro "Todos" removido. Na planilha de outro atleta é possível editar e criar treinos, mas não concluir por ele.
+- Semana de segunda a domingo com faixa de dias, resumo em uma linha, só dias com treino listados, cartão com um botão principal e menu "⋯" para Editar/Excluir.
+- Quatro abas: Semana, Ranking (semana, mês, ano), Strava e Conta. Cabeçalho com estado da sincronização. CSS reescrito com variáveis e tema escuro automático.
+- Correções: ordem dos treinos do dia por período (Manhã, Tarde, Noite); erros HTTP 5xx/429 tratados como temporários, sem travar a fila; operação criada durante uma sincronização é enviada em seguida.
+
+## 2026-11-11 — Etapa 24: compartilhamento opcional dos resultados do Strava (2.4.0)
+
+- Lidos o Acordo e a Política da API do Strava em vigor desde 01/06/2026. Item 2.3 restringe a exibição ao próprio usuário; item 6.1 excetua aplicativos com capacidade de até 9.999 atletas; item 5.13 exige consentimento expresso prévio. O responsável optou pelo compartilhamento por consentimento, ciente de que a leitura não é isenta de dúvida.
+- Migração `strava_group_sharing_consent` aplicada: coluna `training_members.strava_shared_at`, função `set_strava_sharing()` (cada atleta altera só o próprio consentimento), política `results_read` passa a mostrar resultados do Strava ao grupo enquanto houver consentimento, e remoção da conexão zera o consentimento.
+- Ensaiada antes em transação desfeita e validada depois com `tests/strava-sharing-rls.sql` (identidades sintéticas, rollback, sem sobras).
+- Tela: opção "Mostrar meus treinos do Strava para o grupo" na aba Strava, desligada por padrão. PR #6.
+- Pendente de cada atleta: ligar a opção. Em 11/11 nenhum dos três havia ligado; por isso o ranking de cada conta mostrava só os próprios km do Strava.
+
+## 2026-11-11 — Etapa 25: login travado no Android (2.4.1)
+
+- Sintoma: após sair de uma conta e entrar em outra, o app parava em "Verificando seu acesso ao grupo…", sem erro.
+- Evidência: registros do servidor mostravam `POST /auth/v1/token` 200 e nenhuma requisição depois. O `getSession()` do SDK 2.81.1 espera sem limite por um Web Lock compartilhado entre abas e janelas do app; uma janela congelada em segundo plano mantinha a trava.
+- Correção: `lockWithTakeover()` em `core.mjs` espera até um limite e então assume a trava. Usada como trava de sessão do SDK (8 s) e nas travas de sincronização (90 s) e fila (8 s). PR #7.
+- Confirmado pelo responsável no aparelho: o login voltou a funcionar.
+
+## 2026-11-11 — Etapa 26: crédito ao aparelho e cache de 7 dias (2.5.0)
+
+- Política da API, item 4.4 (atribuição a dados de origem Garmin) e item 6.2 (cache de até sete dias). O responsável pediu crédito a qualquer aparelho informado pelo Strava.
+- Migração `strava_device_credit_and_seven_day_cache` aplicada: `training_strava_activities.device_name`, `training_results.source_device` (mantido por gatilhos, gravável só pelo servidor), importação guardando o aparelho, e rotina diária `treinos-strava-retention` (03:17 UTC) que apaga atividades com mais de 7 dias não vinculadas a um treino. As vinculadas permanecem.
+- Edge Function `strava` versão 4: sincronização manual de 7 dias (antes 30) e consulta ao detalhe de cada atividade para obter o aparelho; falha nessa consulta só omite o crédito.
+- Verificado em produção pelo responsável: resultado exibindo "Strava · Amazfit GTR 4". PR #8.
+- Não consultadas as diretrizes de marca da Garmin; o crédito usa o nome do aparelho como o Strava informa. Retenção dos resultados vinculados além de 7 dias permanece como decisão consciente do responsável.
+
+## 2026-11-11 — Etapa 27: cores dos cartões por estado (2.6.0 e 2.6.1)
+
+- `sessionState()` em `core.mjs` define um estado por cartão: feito, não realizado, hoje, atrasado, a definir ou planejado. A etiqueta sempre diz o estado por escrito.
+- 2.6.0 (PR #9): cor na borda e na etiqueta; bolinha âmbar na faixa da semana quando há treino atrasado; botão secundário nos treinos futuros.
+- 2.6.1 (PR #10): a pedido do responsável, fundo do cartão tingido pelo estado e faixa grossa à esquerda, para o estado ser lido só pela cor.
+
+## 2026-11-11 — Observações de operação
+
+- Entre 20:25 e 21:10 UTC o GitHub Actions deixou execuções em "Queued" sem criar tarefas e três publicações do Pages terminaram em `startup_failure`; havia incidente aberto de Webhooks na página de status. Os PRs #8, #9 e #10 foram mesclados com base nos mesmos testes rodados localmente, com autorização do responsável. Depois da normalização, Tests e Pages passaram na `main`.
+- Estado ao fim do dia: `main` na versão 2.6.1 publicada em https://treinos.paceplus.app; 36 testes unitários e o cenário de navegador aprovados.
+- Pendências conhecidas: sincronização baixa a agenda inteira a cada 20 s; escrita direta nas tabelas fora da RPC; publicação do Pages expõe o repositório inteiro e não depende dos testes; SQL sem ordem de migração e tabelas base fora do repositório; testes de RLS fora do CI; migração legada ainda na tela; ID do administrador fixo no código da Edge Function. Em avaliação: migrar a hospedagem para Cloudflare Pages.

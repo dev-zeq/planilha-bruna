@@ -4,7 +4,7 @@ PWA estático em https://treinos.paceplus.app, GitHub Pages, backend exclusivo S
 
 ## Acesso
 
-Versão 2.2.1 publicada em 11/11/2026, com Strava individual, importação automática e agrupamento de gravações por treino. SMTP Resend configurado no projeto dedicado, usando domínio verificado paceplus.app e remetente treinos@paceplus.app. Credencial exclusiva limitada a envio, guardada somente na configuração protegida do Supabase.
+Versão 2.6.1 publicada em 11/11/2026, com Strava individual, importação automática, agrupamento de gravações por treino, planilha por atleta, ranking, compartilhamento opcional dos resultados do Strava e crédito ao aparelho de gravação. SMTP Resend configurado no projeto dedicado, usando domínio verificado paceplus.app e remetente treinos@paceplus.app. Credencial exclusiva limitada a envio, guardada somente na configuração protegida do Supabase.
 
 1. Os três convites individuais já foram enviados e constam como Delivered no Resend. Procure “You've been invited”, inclusive na pasta de spam.
 2. Abra o convite do respectivo e-mail. O aplicativo abrirá **Definir nova senha**. Escolha e salve uma senha com pelo menos oito caracteres. Não compartilhe senhas no chat.
