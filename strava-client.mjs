@@ -19,6 +19,45 @@ export function setupStrava({client,getUser,getSnapshot,refresh,oauthReturn=null
  function confirmAction(title,text){
   return new Promise(resolve=>{const dialog=$('stravaConfirm');$('stravaConfirmTitle').textContent=title;$('stravaConfirmText').textContent=text;dialog.returnValue='cancel';const close=()=>{dialog.removeEventListener('close',close);resolve(dialog.returnValue==='confirm');};dialog.addEventListener('close',close);dialog.showModal();});
  }
+ function suggest(){
+  if(!connection||!activities.length)return null;
+  const uid=getUser()?.id,snapshot=getSnapshot();
+  if(!uid||!snapshot?.sessions||!snapshot?.results)return null;
+  // Only offer unambiguous same-day matches. Never silently write a result.
+  const eligible=snapshot.sessions.filter(x=>!x.target_user_ids?.length||x.target_user_ids.includes(uid));
+  const dates=[...new Set(activities.map(a=>a.local_date))].sort().reverse();
+  for(const date of dates){
+   const sessions=eligible.filter(x=>x.training_date===date&&!snapshot.results.some(r=>r.session_id===x.id&&r.user_id===uid));
+   if(sessions.length!==1)continue;
+   const daily=activities.filter(a=>a.local_date===date).sort((a,b)=>new Date(a.start_date)-new Date(b.start_date));
+   if(!daily.length)continue;
+   // A long gap may mean separate morning/evening runs: suggest only the latest cluster.
+   const clusters=[];let group=[];
+   for(const a of daily){
+    const prev=group[group.length-1];
+    const gap=prev?(new Date(a.start_date).getTime()-(new Date(prev.start_date).getTime()+Number(prev.moving_seconds)*1000))/60000:0;
+    if(prev&&(!Number.isFinite(gap)||gap>90||gap< -30)){clusters.push(group);group=[];}
+    group.push(a);
+   }
+   if(group.length)clusters.push(group);
+   // If two distinct clusters exist, don't guess which run belongs to the plan.
+   if(clusters.length!==1||clusters[0].length>10)continue;
+   return {session:sessions[0],rows:clusters[0]};
+  }
+  return null;
+ }
+ function renderSuggestion(){
+  const card=$('stravaSuggestion');if(!card)return;
+  const candidate=suggest();
+  card.hidden=!connection;
+  if(!connection)return;
+  $('stravaSuggestionStatus').textContent=candidate?'Encontramos atividades para revisar':'Sincronização e vínculos';
+  $('stravaSuggestionDetail').textContent=candidate?
+   `${candidate.session.training_date} · ${candidate.session.title} · ${candidate.rows.length} atividade(s) candidata(s). Confira antes de salvar.`:
+   automatic?.enabled?'Sincronização automática ativa. Nenhum vínculo inequívoco pendente; você ainda pode escolher atividades abaixo.':'Conecte ou sincronize suas corridas. Você pode vincular atividades manualmente abaixo.';
+  $('stravaSuggestionReview').hidden=!candidate;
+  $('stravaSuggestionReview').disabled=busy;
+ }
  function render(){
   $('stravaConnect').hidden=Boolean(connection);$('stravaConnect').disabled=busy||!configured;
   $('stravaSync').hidden=$('stravaDisconnect').hidden=!connection;$('stravaSync').disabled=$('stravaDisconnect').disabled=busy;
@@ -26,6 +65,7 @@ export function setupStrava({client,getUser,getSnapshot,refresh,oauthReturn=null
   $('stravaShareRow').hidden=!connection;$('stravaShare').checked=getSharing();$('stravaShare').disabled=busy;
   $('stravaAuto').hidden=!canEnable||Boolean(automatic?.enabled);$('stravaAuto').disabled=busy;
   $('stravaAutomatic').textContent=automatic?.enabled?'Sincronização automática ativa. Novas corridas e alterações chegam pelo Strava, mesmo com o app fechado. O vínculo a um treino continua por sua confirmação.':configured?'A sincronização automática ainda precisa ser ativada pelo responsável.':'';
+  renderSuggestion();
   $('stravaActivities').innerHTML=activities.map(a=>`<article class="entry"><label class="strava-select"><input type="checkbox" data-strava-select="${a.activity_id}" ${selectedIds.has(String(a.activity_id))?'checked':''} ${busy?'disabled':''}><strong>${esc(a.name)}</strong></label><p>${esc(a.local_date)} · ${(Number(a.distance_m)/1000).toLocaleString('pt-BR',{maximumFractionDigits:2})} km · ${durationText(a.moving_seconds)} · ${paceText(Number(a.distance_m)/1000,a.moving_seconds)}</p><p class="hint">Tempo em movimento${a.device_name?' · Gravado com '+esc(a.device_name):''} · Visível somente nesta conta</p><a href="https://www.strava.com/activities/${a.activity_id}" target="_blank" rel="noopener noreferrer">Ver no Strava</a><button type="button" class="secondary" data-strava-link="${a.activity_id}" ${busy?'disabled':''}>Vincular a um treino</button></article>`).join('');renderSelection();
  }
  function renderSelection(){const rows=activities.filter(a=>selectedIds.has(String(a.activity_id)));const km=rows.reduce((n,a)=>n+Number(a.distance_m),0)/1000,seconds=rows.reduce((n,a)=>n+a.moving_seconds,0);$('stravaSelected').textContent=rows.length?`${rows.length} atividade(s) · ${km.toLocaleString('pt-BR',{maximumFractionDigits:2})} km · ${durationText(seconds)} · ${paceText(km,seconds)}`:'Selecione aquecimento, treino principal e desaquecimento para somar no mesmo resultado.';$('stravaGroup').disabled=busy||!rows.length;}
@@ -82,6 +122,7 @@ export function setupStrava({client,getUser,getSnapshot,refresh,oauthReturn=null
   $('stravaLinkDialog').showModal();
  }
  $('stravaActivities').onchange=e=>{const id=e.target.dataset.stravaSelect;if(!id||busy)return;if(e.target.checked)selectedIds.add(id);else selectedIds.delete(id);renderSelection();};
+ $('stravaSuggestionReview').onclick=()=>{const candidate=suggest();if(!candidate)return;selectedIds=new Set(candidate.rows.map(a=>String(a.activity_id)));render();openLink(candidate.rows);};
  $('stravaGroup').onclick=()=>openLink(activities.filter(a=>selectedIds.has(String(a.activity_id))));
  $('stravaActivities').onclick=e=>{const id=e.target.closest('[data-strava-link]')?.dataset.stravaLink;if(id)openLink(activities.filter(a=>String(a.activity_id)===id));};
  $('stravaLinkForm').onsubmit=e=>{e.preventDefault();void guarded(async()=>{
