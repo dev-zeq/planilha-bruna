@@ -6,7 +6,7 @@ export function takeStravaReturn(){
  for(const key of ['state','code','scope','error','error_description'])query.delete(key);
  history.replaceState(null,'',location.pathname+(query.size?'?'+query:'')+location.hash);return result;
 }
-export function setupStrava({client,getUser,getSnapshot,refresh,oauthReturn=null}){
+export function setupStrava({client,getUser,getSnapshot,refresh,oauthReturn=null,isVisible=()=>true}){
  const $=id=>document.getElementById(id);let owner=null,connection=null,activities=[],configured=false,generation=0,busy=false,pendingReturn=oauthReturn,automatic=null,canEnable=false,lastLoaded=0,selectedIds=new Set();
  function note(text,error=false){$('stravaMessage').textContent=text;$('stravaMessage').classList.toggle('error',error);}
  function reset(){generation++;owner=null;connection=null;activities=[];configured=false;busy=false;automatic=null;canEnable=false;lastLoaded=0;selectedIds.clear();$('stravaActivities').innerHTML='';$('stravaConnection').textContent='';note('');render();}
@@ -47,7 +47,6 @@ export function setupStrava({client,getUser,getSnapshot,refresh,oauthReturn=null
   }catch(e){if(gen===generation)note(e.message,true);}
  }
  $('stravaAuto').onclick=()=>guarded(async()=>{note('Ativando sincronização automática…');await invoke('enable_auto');await load();note('Sincronização automática ativada. Novas corridas serão recebidas sem apertar o botão.');});
- $('stravaPanel').ontoggle=()=>{if($('stravaPanel').open&&!busy&&getUser())void load();};
  $('stravaConnect').onclick=()=>guarded(async()=>{
   const user=getUser();if(!user)throw Error('Entre na sua conta.');
   const name=document.getElementById('accountName').textContent.split(' · ')[0];
@@ -83,5 +82,5 @@ export function setupStrava({client,getUser,getSnapshot,refresh,oauthReturn=null
   const current=linkVersions.get(session);if(current?.pending)throw Error('Envie primeiro suas alterações pendentes da agenda.');
   await invoke('link',{session_id:session,activity_ids:selectedActivities.map(a=>a.activity_id),version:current?.version||0});$('stravaLinkDialog').close();selectedIds.clear();renderSelection();await refresh();note('Seu resultado foi vinculado. Os outros atletas não foram concluídos.');
  });};
- return {load,reset,async refreshAuto(){if(getUser()&&!busy&&$('stravaPanel').open&&Date.now()-lastLoaded>15000)await load();}};
+ return {load,reset,show(){if(!busy&&getUser())void load();},async refreshAuto(){if(getUser()&&!busy&&isVisible()&&Date.now()-lastLoaded>15000)await load();}};
 }

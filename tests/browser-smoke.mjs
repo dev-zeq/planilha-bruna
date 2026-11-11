@@ -13,7 +13,7 @@ const server=http.createServer(async(req,res)=>{
   if(!file.startsWith(root+path.sep)){res.writeHead(403);res.end();return;}
   let text=await fs.readFile(file);
   if(name==='/')text=Buffer.from(text.toString().replace('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.81.1/dist/umd/supabase.js" defer></script>','<script src="/tests/mock-supabase.js"></script>').replace('</body>','<script type="module" src="/tests/browser-scenarios.js"></script></body>'));
-  res.setHeader('Content-Type',name==='/'?'text/html':/\.(mjs|js)$/.test(name)?'text/javascript':name.endsWith('.css')?'text/css':'application/json');res.end(text);
+  res.setHeader('Content-Type',name==='/'?'text/html':/\.(mjs|js)$/.test(name)?'text/javascript':name.endsWith('.css')?'text/css':name.endsWith('.svg')?'image/svg+xml':name.endsWith('.png')?'image/png':'application/json');res.end(text);
  }catch{res.writeHead(404);res.end();}
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
@@ -38,6 +38,9 @@ try {
  const dom=await page('Runtime.evaluate',{expression:'document.documentElement.outerHTML',returnByValue:true});await fs.writeFile('test-results/browser-dom.html',dom.result.value);
  const mobile=await page('Page.captureScreenshot',{format:'png'});await fs.writeFile('test-results/mobile.png',Buffer.from(mobile.data,'base64'));
  const overflow=await page('Runtime.evaluate',{expression:'document.documentElement.scrollWidth>innerWidth+1',returnByValue:true});
+ // Capture the other tabs as well, so layout regressions show up in the CI artifacts.
+ for(const tab of ['rank','strava','account']){await page('Runtime.evaluate',{expression:`document.querySelector('[data-tab="${tab}"]').click()`});await new Promise(r=>setTimeout(r,150));const shot=await page('Page.captureScreenshot',{format:'png'});await fs.writeFile(`test-results/mobile-${tab}.png`,Buffer.from(shot.data,'base64'));}
+ await page('Runtime.evaluate',{expression:`document.querySelector('[data-tab="week"]').click()`});
  if(overflow.result.value){const detail=await page('Runtime.evaluate',{expression:"Array.from(document.querySelectorAll('body *')).filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>({tag:e.tagName,id:e.id,right:e.getBoundingClientRect().right})).slice(0,20)",returnByValue:true});console.log('Overflow elements:',detail.result.value);}
  await page('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
  const desktop=await page('Page.captureScreenshot',{format:'png'});await fs.writeFile('test-results/desktop.png',Buffer.from(desktop.data,'base64'));
