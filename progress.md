@@ -35,7 +35,7 @@ Atualizado em: 2026-11-11
 - Interface publicada carregou o login com SDK real e exibiu versão 2.0.1. Botão de atualização do PWA executado no navegador com sucesso.
 - **Validação real realizada:** criação, edição, conclusão individual e persistência após recarregar pela sessão Ezequiel no domínio publicado; resultado não concluiu Bruna/Renato. Permissões conferidas com os três UUIDs reais no Postgres, em transação revertida. Ainda pendentes: sessões simultâneas em aparelhos diferentes, login por senha após sair/recuperação real e offline específico em Safari/iPhone e Android.
 - **Dados antigos preservados:** nenhuma migração foi executada. Depois de Ezequiel e Bruna entrarem no grupo, exportar o backup de cada aparelho e confirmar a importação. Não preencher resultados do outro atleta automaticamente.
-- **Próximo passo imediato:** confirmar a exclusão do treino técnico temporário na caixa de confirmação aberta do navegador. A automação ficou bloqueada nesse diálogo; exclusão ainda não comprovada. Depois conferir a limpeza e preparar a migração dos backups mediante confirmação. Guia de teste no README.md.
+- **Limpeza confirmada:** o teste técnico foi excluído logicamente e a agenda está sem dados fictícios visíveis ou operações pendentes. **Próximo passo de dados:** exportar backups locais e revisar a confirmação antes da migração; também faltam testes em aparelhos distintos, recuperação e offline móvel. Guia no README.md.
 
 ## Checklist original (histórico; execução detalhada abaixo)
 
@@ -237,3 +237,15 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Última consulta: treino técnico ainda ativo, versão 2, deleted_at nulo. Há um resultado fictício ligado a ele. O usuário precisa clicar OK na confirmação aberta; então conferir exclusão lógica e ausência de pendências. Não marcar limpeza como concluída ainda.
 - Dados locais antigos não importados nem apagados. Resultado do teste técnico deve ficar fora da agenda após a exclusão.
 - Arquivo modificado: progress.md, commit desta etapa. Sem mudanças de aplicação/banco além das operações de teste autorizadas.
+
+
+## 2026-11-11 — Etapa 9: limpeza do teste confirmada
+
+- Usuário confirmou o diálogo de exclusão no navegador.
+- Consulta real confirmou deleted_at preenchido (11/11/2026 às 14:32:58, Brasília) e versão 3 para o treino técnico 119858f7-5649-46bc-80dc-a84042d09cc1.
+- Zero sessões ativas. Exclusão lógica mantém o registro e o resultado fictício vinculados para auditoria, fora da agenda e dos totais visíveis.
+- Interface conferida: agenda vazia, 0 resultados/0 km/0 pendentes e mensagem “Agenda atualizada. Todas as alterações foram confirmadas.” Nenhuma operação presa na fila.
+- Comprovados em produção pela UI autenticada: criar, editar, concluir individualmente, persistir após recarga e excluir. Três contas confirmadas e membros do mesmo grupo; permissões com UUIDs reais já testadas em transação revertida.
+- Nenhum dado local antigo apagado ou migrado. Próxima etapa de dados: exportar backup no aparelho que contém os treinos e revisar a confirmação de importação antes de enviar ao Supabase.
+- Permanecem pendentes: teste simultâneo em aparelhos distintos, recuperação real de senha por e-mail e offline específico em Safari/iPhone e Android.
+- Arquivo modificado: progress.md; commit desta etapa documental.
