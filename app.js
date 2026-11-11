@@ -1,5 +1,5 @@
 import {setupStrava,takeStravaReturn} from './strava-client.mjs';
-import {LEGACY_KEY, PERIODS, escapeHTML as esc, isoLocal, monday, durationSeconds, durationText, paceText, numberOrNull, validateLegacy, legacyOperations, legacyUUID, projectSnapshot} from './core.mjs';
+import {LEGACY_KEY, PERIODS, escapeHTML as esc, isoLocal, monday, durationSeconds, durationText, paceText, numberOrNull, validateLegacy, legacyOperations, legacyUUID, projectSnapshot, lockWithTakeover} from './core.mjs';
 
 const stravaReturn=takeStravaReturn();
 const $=id=>document.getElementById(id);
@@ -20,6 +20,7 @@ function errorText(error){
  if(/email address not authorized|email_provider_disabled|sending confirmation email/i.test(m))return 'O envio de confirmação ainda precisa ser configurado pelo responsável do aplicativo. Seus dados antigos continuam preservados.';
  if(/rate limit/i.test(m))return 'Limite de tentativas atingido. Aguarde alguns minutos.';
  if(/CONFLICT/.test(m))return 'Há uma alteração mais recente. Exporte as pendências, descarte a operação em conflito e refaça a edição com os dados atuais.';
+ if(/Lock broken|steal/i.test(m))return 'Outra janela do aplicativo assumiu a sincronização. Toque em Atualizar agenda se os dados não aparecerem.';
  if(/fetch|network|offline/i.test(m))return 'Sem conexão com o servidor. Seus dados locais e pendências foram preservados.';
  return m;
 }
@@ -27,7 +28,8 @@ async function guarded(fn,button){
  if(button)button.disabled=true;
  try{await fn();}catch(e){message(errorText(e),true);}finally{if(button)button.disabled=false;}
 }
-function lock(name,fn){return navigator.locks?navigator.locks.request(name,fn):fn();}
+// A full sync may legitimately hold its lock across several slow requests; queue edits are instant.
+function lock(name,fn){return lockWithTakeover(name,fn,name.startsWith('treinos-sync-')?90000:8000);}
 async function editQueue(uid,fn){return lock('treinos-queue-'+uid,()=>{const q=queue(uid);const next=fn(q)||q;write(queueKey(uid),next);return next;});}
 function view(){return projectSnapshot(base,user?queue(user.id):[],user?.id);}
 function download(data,name){const url=window.URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>window.URL.revokeObjectURL(url),2000);}
@@ -291,7 +293,8 @@ try{
  const incoming=new URLSearchParams(location.hash.slice(1));
  const needsPassword=['recovery','invite'].includes(incoming.get('type'));
  if(needsPassword)setAuthMode('password');
- client=window.supabase.createClient(URL_API,PUBLIC_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:(url,options={})=>fetch(url,{...options,signal:options.signal||AbortSignal.timeout(15000)})}});
+ // The SDK's default session lock waits without limit, so a frozen window could block every request.
+ client=window.supabase.createClient(URL_API,PUBLIC_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,lock:(name,_acquireTimeout,fn)=>lockWithTakeover(name,fn)},global:{fetch:(url,options={})=>fetch(url,{...options,signal:options.signal||AbortSignal.timeout(15000)})}});
  stravaUI=setupStrava({isVisible:()=>tab==='strava',getSharing:()=>Boolean(members.find(m=>m.user_id===user?.id)?.strava_shared_at),setSharing:async share=>{check(await client.rpc('set_strava_sharing',{p_share:share}));await refresh(true);},client,getUser:()=>user,getSnapshot:view,refresh:()=>refresh(true),oauthReturn:stravaReturn});
  client.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(event==='PASSWORD_RECOVERY'){generation++;user=session.user;group=null;showPanel('auth');setAuthMode('password');message('Defina sua nova senha.');}else if(authMode!=='password')void guarded(()=>handleSession(session));},0);});
  const {data,error}=await client.auth.getSession();if(error)throw error;
