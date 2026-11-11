@@ -37,7 +37,7 @@ export function dbError(error){
 export async function sha256(text,cryptoAPI=crypto){return Array.from(new Uint8Array(await cryptoAPI.subtle.digest('SHA-256',new TextEncoder().encode(text))),n=>n.toString(16).padStart(2,'0')).join('');}
 export function newState(cryptoAPI=crypto){return Array.from(cryptoAPI.getRandomValues(new Uint8Array(32)),n=>n.toString(16).padStart(2,'0')).join('');}
 
-export function createHandler({createClient,env,fetcher=fetch,cryptoAPI=crypto,now=()=>Date.now(),background=undefined}){
+export function createHandler({createClient,env,fetcher=fetch,cryptoAPI=crypto,now=()=>Date.now(),background=task=>{void task.catch(()=>{});}}){
  const url=env('SUPABASE_URL'),key=env('SUPABASE_SERVICE_ROLE_KEY')||JSON.parse(env('SUPABASE_SECRET_KEYS')||'{}').default;
  const clientId=env('STRAVA_CLIENT_ID'),clientSecret=env('STRAVA_CLIENT_SECRET');
  const configured=Boolean(clientId&&/^\d+$/.test(clientId)&&clientSecret);
