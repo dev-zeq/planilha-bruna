@@ -24,4 +24,4 @@ try{
  document.querySelector('[data-discard]').click();await wait(()=>$('queuePanel').hidden);await wait(statusSynced);
  document.querySelector('[data-delete]').click();await wait(()=>state.sessions[0].deleted_at);await wait(statusSynced);assert(document.querySelectorAll('.entry').length===1,'deleted session hidden');
  const result=document.createElement('pre');result.id='smoke-result';result.textContent='PASS: login A/B/C, shared create/edit/delete, own completion, escaped HTML, persisted network failure, retry and CAS conflict';document.body.append(result);
-}catch(error){const result=document.createElement('pre');result.id='smoke-result';result.textContent='FAIL: '+error.stack;document.body.append(result);}
+}catch(error){const result=document.createElement('pre');result.id='smoke-result';result.textContent='FAIL: '+error.stack+'; STATUS: '+$('statusMessage').textContent;document.body.append(result);}

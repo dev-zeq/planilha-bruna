@@ -11,6 +11,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm test && npm run check
+      - run: curl --fail --silent --show-error https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.81.1/dist/umd/supabase.js -o /tmp/supabase-sdk.js && node --check /tmp/supabase-sdk.js
       - run: node tests/browser-smoke.mjs
       - uses: actions/upload-artifact@v4
         if: always()
