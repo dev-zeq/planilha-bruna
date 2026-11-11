@@ -7,9 +7,9 @@ export function takeStravaReturn(){
  history.replaceState(null,'',location.pathname+(query.size?'?'+query:'')+location.hash);return result;
 }
 export function setupStrava({client,getUser,getSnapshot,refresh,oauthReturn=null}){
- const $=id=>document.getElementById(id);let owner=null,connection=null,activities=[],configured=false,generation=0,busy=false,pendingReturn=oauthReturn,automatic=null,canEnable=false,lastLoaded=0;
+ const $=id=>document.getElementById(id);let owner=null,connection=null,activities=[],configured=false,generation=0,busy=false,pendingReturn=oauthReturn,automatic=null,canEnable=false,lastLoaded=0,selectedIds=new Set();
  function note(text,error=false){$('stravaMessage').textContent=text;$('stravaMessage').classList.toggle('error',error);}
- function reset(){generation++;owner=null;connection=null;activities=[];configured=false;busy=false;automatic=null;canEnable=false;lastLoaded=0;$('stravaActivities').innerHTML='';$('stravaConnection').textContent='';note('');render();}
+ function reset(){generation++;owner=null;connection=null;activities=[];configured=false;busy=false;automatic=null;canEnable=false;lastLoaded=0;selectedIds.clear();$('stravaActivities').innerHTML='';$('stravaConnection').textContent='';note('');render();}
  async function invoke(action,body={}){
   const result=await client.functions.invoke('strava',{body:{action,...body}});
   if(result.error){let detail;try{detail=await result.error.context.json();}catch{/* no response body */}throw Error(detail?.error||'O serviço Strava está indisponível. Tente novamente.');}
@@ -25,15 +25,16 @@ export function setupStrava({client,getUser,getSnapshot,refresh,oauthReturn=null
   $('stravaConnection').textContent=connection?`Conectado: ${connection.athlete_name}${connection.last_synced_at?' · Última sincronização: '+new Date(connection.last_synced_at).toLocaleString('pt-BR'):''}`:configured?'Nenhuma conta Strava conectada.':'O responsável ainda precisa finalizar a configuração do Strava.';
   $('stravaAuto').hidden=!canEnable||Boolean(automatic?.enabled);$('stravaAuto').disabled=busy;
   $('stravaAutomatic').textContent=automatic?.enabled?'Sincronização automática ativa. Novas corridas e alterações chegam pelo Strava, mesmo com o app fechado. O vínculo a um treino continua por sua confirmação.':configured?'A sincronização automática ainda precisa ser ativada pelo responsável.':'';
-  $('stravaActivities').innerHTML=activities.map(a=>`<article class="entry"><strong>${esc(a.name)}</strong><p>${esc(a.local_date)} · ${(Number(a.distance_m)/1000).toLocaleString('pt-BR',{maximumFractionDigits:2})} km · ${durationText(a.moving_seconds)} · ${paceText(Number(a.distance_m)/1000,a.moving_seconds)}</p><p class="hint">Tempo em movimento · Visível somente nesta conta</p><a href="https://www.strava.com/activities/${a.activity_id}" target="_blank" rel="noopener noreferrer">Ver no Strava</a><button type="button" class="secondary" data-strava-link="${a.activity_id}" ${busy?'disabled':''}>Vincular a um treino</button></article>`).join('');
+  $('stravaActivities').innerHTML=activities.map(a=>`<article class="entry"><label class="strava-select"><input type="checkbox" data-strava-select="${a.activity_id}" ${selectedIds.has(String(a.activity_id))?'checked':''} ${busy?'disabled':''}><strong>${esc(a.name)}</strong></label><p>${esc(a.local_date)} · ${(Number(a.distance_m)/1000).toLocaleString('pt-BR',{maximumFractionDigits:2})} km · ${durationText(a.moving_seconds)} · ${paceText(Number(a.distance_m)/1000,a.moving_seconds)}</p><p class="hint">Tempo em movimento · Visível somente nesta conta</p><a href="https://www.strava.com/activities/${a.activity_id}" target="_blank" rel="noopener noreferrer">Ver no Strava</a><button type="button" class="secondary" data-strava-link="${a.activity_id}" ${busy?'disabled':''}>Vincular a um treino</button></article>`).join('');renderSelection();
  }
+ function renderSelection(){const rows=activities.filter(a=>selectedIds.has(String(a.activity_id)));const km=rows.reduce((n,a)=>n+Number(a.distance_m),0)/1000,seconds=rows.reduce((n,a)=>n+a.moving_seconds,0);$('stravaSelected').textContent=rows.length?`${rows.length} atividade(s) · ${km.toLocaleString('pt-BR',{maximumFractionDigits:2})} km · ${durationText(seconds)} · ${paceText(km,seconds)}`:'Selecione aquecimento, treino principal e desaquecimento para somar no mesmo resultado.';$('stravaGroup').disabled=busy||!rows.length;}
  async function load(){
   const user=getUser();if(!user){reset();return;}
   const gen=++generation;owner=user.id;
   try{
    const data=await invoke('status');if(gen!==generation||getUser()?.id!==owner)return;
    configured=data.configured;connection=data.connection;automatic=data.automatic;canEnable=data.can_enable_auto;lastLoaded=Date.now();
-   if(connection){const rows=await client.from('training_strava_activities').select('*').eq('user_id',owner).order('start_date',{ascending:false}).limit(100);if(rows.error)throw rows.error;if(gen!==generation)return;activities=rows.data;}else activities=[];
+   if(connection){const rows=await client.from('training_strava_activities').select('*').eq('user_id',owner).order('start_date',{ascending:false}).limit(100);if(rows.error)throw rows.error;if(gen!==generation)return;activities=rows.data;selectedIds=new Set([...selectedIds].filter(id=>activities.some(a=>String(a.activity_id)===id)));}else activities=[];
    render();
    if(pendingReturn){
     const returned=pendingReturn;pendingReturn=null;
@@ -61,22 +62,26 @@ export function setupStrava({client,getUser,getSnapshot,refresh,oauthReturn=null
  });
  for(const button of document.querySelectorAll('[data-strava-close]'))button.onclick=()=>$(button.dataset.stravaClose).close('cancel');
  $('stravaConfirmYes').onclick=()=>$('stravaConfirm').close('confirm');
- let linkVersions=new Map(),selectedActivity=null;
- $('stravaActivities').onclick=e=>{
-  const id=e.target.closest('[data-strava-link]')?.dataset.stravaLink;if(!id||busy)return;
-  selectedActivity=activities.find(a=>String(a.activity_id)===id);if(!selectedActivity)return;
+ let linkVersions=new Map(),selectedActivities=[];
+ function openLink(rows){
+  if(!rows.length||busy)return;if(rows.length>10){note('Selecione no máximo dez atividades para este treino.',true);return;}
+  selectedActivities=rows;
   const uid=getUser()?.id,v=getSnapshot();const eligible=v.sessions.filter(s=>!s.target_user_ids.length||s.target_user_ids.includes(uid));
   linkVersions=new Map(eligible.map(s=>[s.id,v.results.find(r=>r.session_id===s.id&&r.user_id===uid)||null]));
-  $('stravaLinkActivity').textContent=`${selectedActivity.name} · ${selectedActivity.local_date} · ${(Number(selectedActivity.distance_m)/1000).toLocaleString('pt-BR')} km · ${durationText(selectedActivity.moving_seconds)} em movimento`;
+  const km=rows.reduce((n,a)=>n+Number(a.distance_m),0)/1000,seconds=rows.reduce((n,a)=>n+a.moving_seconds,0);
+  $('stravaLinkActivity').textContent=rows.map(a=>`${a.local_date} · ${a.name}`).join(' + ')+` · Total: ${km.toLocaleString('pt-BR',{maximumFractionDigits:2})} km · ${durationText(seconds)} · ${paceText(km,seconds)} em movimento`;
   $('stravaSession').innerHTML='<option value="">Selecione o treino</option>'+eligible.map(s=>`<option value="${s.id}">${esc(s.training_date)} · ${esc(s.title)}</option>`).join('');
-  const sameDate=eligible.filter(s=>s.training_date===selectedActivity.local_date);if(sameDate.length===1)$('stravaSession').value=sameDate[0].id;
-  $('stravaLinkNote').textContent='Somente o seu resultado será preenchido. Um resultado anterior seu será substituído. O resultado importado ficará privado por ser proveniente do Strava.';
+  const dates=new Set(rows.map(a=>a.local_date));const sameDate=dates.size===1?eligible.filter(s=>s.training_date===rows[0].local_date):[];if(sameDate.length===1)$('stravaSession').value=sameDate[0].id;
+  $('stravaLinkNote').textContent='Distância e tempo em movimento serão somados em um único resultado seu. O pace usa os totais. Seu resultado anterior será substituído; os outros atletas não serão concluídos. Dados do Strava ficam privados.';
   $('stravaLinkDialog').showModal();
- };
+ }
+ $('stravaActivities').onchange=e=>{const id=e.target.dataset.stravaSelect;if(!id||busy)return;if(e.target.checked)selectedIds.add(id);else selectedIds.delete(id);renderSelection();};
+ $('stravaGroup').onclick=()=>openLink(activities.filter(a=>selectedIds.has(String(a.activity_id))));
+ $('stravaActivities').onclick=e=>{const id=e.target.closest('[data-strava-link]')?.dataset.stravaLink;if(id)openLink(activities.filter(a=>String(a.activity_id)===id));};
  $('stravaLinkForm').onsubmit=e=>{e.preventDefault();void guarded(async()=>{
-  const session=$('stravaSession').value;if(!session||!selectedActivity)throw Error('Selecione uma atividade e um treino.');
+  const session=$('stravaSession').value;if(!session||!selectedActivities.length)throw Error('Selecione uma atividade e um treino.');
   const current=linkVersions.get(session);if(current?.pending)throw Error('Envie primeiro suas alterações pendentes da agenda.');
-  await invoke('link',{session_id:session,activity_id:selectedActivity.activity_id,version:current?.version||0});$('stravaLinkDialog').close();await refresh();note('Seu resultado foi vinculado. Os outros atletas não foram concluídos.');
+  await invoke('link',{session_id:session,activity_ids:selectedActivities.map(a=>a.activity_id),version:current?.version||0});$('stravaLinkDialog').close();selectedIds.clear();renderSelection();await refresh();note('Seu resultado foi vinculado. Os outros atletas não foram concluídos.');
  });};
  return {load,reset,async refreshAuto(){if(getUser()&&!busy&&$('stravaPanel').open&&Date.now()-lastLoaded>15000)await load();}};
 }

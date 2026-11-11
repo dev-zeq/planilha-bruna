@@ -366,3 +366,15 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Testes locais de servidor, autenticação, challenge, callback, ACK independente da API, repetição, limite 429, proprietário, revogação e worker passaram. SQL real com fixtures revertidas aprovou fila, claims exclusivos, retries, atualização individual, exclusão, época e isolamento. CI de navegador/Deno ainda pendente.
 - Nova informação do usuário durante esta etapa: Amazfit grava aquecimento, principal e desaquecimento em atividades separadas. Incluir vínculo de múltiplas atividades ao mesmo resultado, somando distância e tempo em movimento e calculando pace ponderado. Agrupamento exige confirmação, sem juntar automaticamente sessões diferentes.
 - Arquivos em desenvolvimento: supabase/strava-automation*.sql, supabase/functions/strava/automation.mjs, logic.mjs, index.ts; strava-client.mjs, app.js, index.html, sw.js, package.json, tests/strava-automation* e testes existentes ajustados. Commit de checkpoint desta etapa registra fontes; publicação só após validar também agrupamento.
+
+
+## 2026-11-11 — Etapa 18: aquecimento, principal e desaquecimento agrupáveis
+
+- Commit de checkpoint da automação: 1cc3db166d359809c06dbadf008c7f594a253da5 na branch feat/strava-auto-sync.
+- Aplicadas migrações strava_multiple_activities_per_result e strava_group_notes_without_stale_count. Criada relação privada por atleta entre resultado e várias atividades; vínculos individuais existentes preservados. Campo antigo strava_activity_id mantido nulo por compatibilidade; função antiga de vínculo único delega ao novo fluxo.
+- Resultado agrupado soma metros antes de arredondar quilômetros e soma segundos em movimento; pace calculado pelos totais. Limite de 10 atividades distintas por vínculo; unicidade impede contar a mesma atividade em dois treinos. Edição protegida por versão. Exclusão/correção de componente recalcula o grupo; ajustes manuais de métricas são preservados.
+- Interface em desenvolvimento 2.2.0: seleção por checkbox, prévia dos totais e confirmação de agrupamento ao treino escolhido. Não há vínculo automático de corridas a treinos da agenda.
+- Teste SQL real (fixtures revertidas) aprovou três atividades → um resultado, pace ponderado, CAS, proteção contra outro atleta, proteção contra dupla contagem, recálculo após excluir componente e compatibilidade do cliente anterior. Testes de automação reexecutados com novo modelo: sucesso. Testes locais e sintaxe: aprovados.
+- Falha de sintaxe detectada pelo check local (parêntese excedente no filtro de seleção) corrigida antes do commit/publicação. CI/Deno/navegador com seleção múltipla ainda pendentes.
+- Fontes: supabase/strava-multiple-activities.sql, supabase/strava-group-notes.sql, strava-client.mjs, index.html, styles.css, servidor/automation.mjs/logic.mjs e testes de agrupamento/automação.
+- Assinatura automática ainda não cadastrada no Strava; produção permanece 2.1.0 enquanto a branch passa pela validação. Próximo passo: CI, revisão de segurança, publicar servidor/interface, ativar webhook e testar agrupamento real de terça-feira com seleção correta.

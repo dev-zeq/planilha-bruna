@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createHandler,normalizeActivity,validateTokens,linkInput,sha256,APP_ORIGIN} from '../supabase/functions/strava/logic.mjs';
+import {createHandler,normalizeActivity,validateTokens,linkInput,linkManyInput,sha256,APP_ORIGIN} from '../supabase/functions/strava/logic.mjs';
 const uid='a1000000-0000-4000-8000-000000000001',session='a2000000-0000-4000-8000-000000000001';
 const now=1794412800000;
 const tokens={access_token:'FAKE-ACCESS',refresh_token:'FAKE-REFRESH',expires_at:Math.floor(now/1000)+3600};
@@ -34,3 +34,5 @@ test('Provider revocation cleans API data and errors never echo tokens',async()=
 test('Rate limit stops sync and releases lease without importing partial data',async()=>{const f=fixture({fetcher:async()=>new Response('{}',{status:429})});assert.equal((await f.request({action:'sync'})).status,429);assert(!f.calls.some(c=>c.name==='strava_server_import'));assert.equal(f.calls.at(-1).args.p_release,true);});
 test('Activity normalization excludes GPS and nonrunning sports; invalid data rejected',()=>{assert.equal(normalizeActivity({...activity,sport_type:'Ride'}),null);assert.throws(()=>normalizeActivity({...activity,distance:-1}));assert.throws(()=>validateTokens({...tokens,expires_at:1},2));assert.deepEqual(linkInput({activity_id:12,session_id:session,version:0}),{activity:12,session,version:0});assert.throws(()=>linkInput({activity_id:12,session_id:session,version:-1}));});
 test('Disconnect requires confirmation and invokes cleanup only for authenticated user',async()=>{const f=fixture();assert.equal((await f.request({action:'disconnect'})).status,400);assert.equal((await f.request({action:'disconnect',confirm:true,user_id:'attacker'})).status,200);assert.equal(f.calls.at(-1).args.p_user,uid);assert.equal(f.calls.at(-1).name,'strava_server_disconnect');});
+
+test('Grouping accepts own activity IDs as bounded distinct list and preserves result version',async()=>{const f=fixture();const data=await(await f.request({action:'link',activity_ids:[12,13,14],session_id:session,version:3,user_id:'attacker'})).json();assert.deepEqual(data,{linked:true});const call=f.calls.find(x=>x.name==='strava_server_link_many');assert.deepEqual(call.args,{p_user:uid,p_activities:[12,13,14],p_session:session,p_version:3});assert.throws(()=>linkManyInput({activity_ids:[12,12],session_id:session,version:0}));assert.throws(()=>linkManyInput({activity_ids:Array.from({length:11},(_,i)=>i+1),session_id:session,version:0}));});

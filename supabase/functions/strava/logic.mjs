@@ -21,6 +21,11 @@ export function linkInput(body){
  if(!Number.isSafeInteger(activity)||activity<=0||!Number.isSafeInteger(version)||version<0)throw new PublicError('Atividade ou versão inválida.');
  return {activity,version,session:uuid(body.session_id)};
 }
+export function linkManyInput(body){
+ const ids=body.activity_ids===undefined?[body.activity_id]:body.activity_ids;
+ if(!Array.isArray(ids)||ids.length<1||ids.length>10||ids.some(x=>!Number.isSafeInteger(x)||x<=0)||new Set(ids).size!==ids.length)throw new PublicError('Selecione de uma a dez atividades distintas.');
+ const v=linkInput({...body,activity_id:ids[0]});return {activities:ids,version:v.version,session:v.session};
+}
 export function dbError(error){
  if(!error)return;
  const m=String(error.message||'');
@@ -114,7 +119,7 @@ export function createHandler({createClient,env,fetcher=fetch,cryptoAPI=crypto,n
     });return reply({imported,days:30});
    }
    if(body.action==='link'){
-    const v=linkInput(body);await rpc('strava_server_link',{p_user:uid,p_activity:v.activity,p_session:v.session,p_version:v.version});return reply({linked:true});
+    const v=linkManyInput(body);await rpc('strava_server_link_many',{p_user:uid,p_activities:v.activities,p_session:v.session,p_version:v.version});return reply({linked:true});
    }
    if(body.action==='disconnect'){
     if(body.confirm!==true)throw new PublicError('Confirme a desconexão e a remoção dos dados importados.');
