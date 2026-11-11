@@ -24,7 +24,7 @@ Atualizado em: 2026-11-11
 
 ## Ponto atual — publicado em 11/11/2026
 
-**Versão 2.2.0 publicada e disponível em https://treinos.paceplus.app/. Agenda compartilhada, importação automática Strava e agrupamento confirmado de gravações separadas em um resultado individual.**
+**Versão 2.2.1 publicada e disponível em https://treinos.paceplus.app/. Cabeçalho com ícone do app e sem nomes pessoais, agenda compartilhada, Strava automático e agrupamento de atividades por resultado.**
 
 - PRs integrados: https://github.com/dev-zeq/planilha-bruna/pull/1 (agenda/Auth), https://github.com/dev-zeq/planilha-bruna/pull/2 (Strava) e https://github.com/dev-zeq/planilha-bruna/pull/3 (automação/agrupamento).
 - Publicação 2.2.0: merge f04e2af178925751a4812c8ada4357c5e03d3ebd; CI main 43082589035 e Pages 43082587991 aprovados. Webhook oficial cadastrado; Cron processou prova real de uma atividade existente em uma tentativa, HTTP 200, zero pendências e sem duplicações.
@@ -411,3 +411,9 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Cabeçalho usa icon.svg já existente, título Treinos e alinhamento compacto responsivo. Ícone decorativo com alt vazio evita leitura duplicada por leitor de tela. Descrição da página generalizada, sem nomes pessoais. Identificação da conta continua na área autenticada.
 - Versão preparada 2.2.1 e cache do service worker incrementado para atualizar a PWA instalada. Arquivos: index.html, styles.css, package.json, sw.js e progress.md. Sem alteração de banco, credenciais ou sincronização.
 - Próximo passo: verificações existentes, CI e conferência visual no domínio após publicar; não marcar publicado antes da confirmação.
+
+- Commit b168f19a28a36c12fa8aa20871826dd928d11bcb no PR #4 (https://github.com/dev-zeq/planilha-bruna/pull/4). CI push 43084640818 e PR 43084649604 aprovados, incluindo os cenários existentes no Chrome móvel/desktop.
+- PR #4 integrado à main no merge 847751858c25a86fd70ac4dbdf62929447fcbf89. Pages e conferência visual do domínio ainda aguardam confirmação.
+
+- Publicação confirmada: CI main 43084749515 e Pages 43084749087 aprovados. Botão de atualização da PWA executado na produção; cabeçalho exibiu somente ícone SVG carregado e título Treinos. Conferência visual no navegador: alinhamento correto e nomes/emoji removidos. Cache 2.2.1 confirmado.
+- Etapa concluída; sem alterações no Supabase ou nos dados dos atletas. Pendências de integração/dispositivos continuam as registradas na etapa 20.
