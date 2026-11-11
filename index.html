@@ -96,6 +96,11 @@
   </section>
 
   <section id="tabStrava" hidden>
+    <div id="stravaSuggestion" class="strava-suggestion" hidden aria-live="polite">
+      <div class="strava-suggestion-heading"><span aria-hidden="true">↻</span><strong id="stravaSuggestionStatus">Sincronização automática</strong></div>
+      <p id="stravaSuggestionDetail">Conecte sua conta para encontrar atividades.</p>
+      <button id="stravaSuggestionReview" type="button" hidden>Revisar atividades sugeridas</button>
+    </div>
     <div class="note" id="stravaPanel">
       <h2 class="section-title">Meu Strava</h2>
       <p class="hint">Conecte a sua conta para importar corridas dos últimos 7 dias. Atividades mais antigas que não foram vinculadas a um treino são apagadas automaticamente. As atividades ficam visíveis somente nesta conta; os treinos que você vincular só aparecem para o grupo se você ativar o compartilhamento abaixo.</p>
@@ -143,7 +148,7 @@
       <p>iPhone: no Safari, Compartilhar → Adicionar à Tela de Início. Android: no Chrome, menu ⋮ → Instalar app.</p>
       <button id="installBtn" hidden>Instalar aplicativo</button>
     </div>
-    <footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Versão 2.6.1.</footer>
+    <footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Versão 2.6.2.</footer>
   </section>
 </section>
 
