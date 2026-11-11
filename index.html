@@ -92,13 +92,13 @@
     </div>
     <h2 class="section-title" id="rankLabel"></h2>
     <ol id="rankList" class="rank"></ol>
-    <p class="hint">Soma da distância dos treinos concluídos no período. Resultados importados do Strava ficam privados, então por enquanto só entram no total de quem os registrou nesta conta.</p>
+    <p class="hint">Soma da distância dos treinos concluídos no período. Treinos vindos do Strava só contam para os outros atletas quando quem correu ativa o compartilhamento na aba Strava.</p>
   </section>
 
   <section id="tabStrava" hidden>
     <div class="note" id="stravaPanel">
       <h2 class="section-title">Meu Strava</h2>
-      <p class="hint">Conecte a sua conta para importar corridas dos últimos 30 dias. Atividades e resultados vindos do Strava ficam visíveis somente nesta conta.</p>
+      <p class="hint">Conecte a sua conta para importar corridas dos últimos 30 dias. As atividades ficam visíveis somente nesta conta; os treinos que você vincular só aparecem para o grupo se você ativar o compartilhamento abaixo.</p>
       <p id="stravaAutomatic" class="hint"></p>
       <p id="stravaConnection"></p>
       <p id="stravaMessage" role="status" aria-live="polite"></p>
@@ -108,6 +108,10 @@
         <button id="stravaSync" hidden>Sincronizar atividades</button>
         <button id="stravaDisconnect" class="secondary" hidden>Desconectar</button>
       </div>
+      <label class="share" id="stravaShareRow" hidden>
+        <input type="checkbox" id="stravaShare">
+        <span><strong>Mostrar meus treinos do Strava para o grupo</strong><small>Distância, tempo e pace dos treinos que você vincular aparecem na sua planilha e no ranking para os outros atletas. Você pode desligar quando quiser.</small></span>
+      </label>
       <p id="stravaSelected" class="hint"></p>
       <button id="stravaGroup" class="secondary full" disabled>Vincular atividades selecionadas</button>
       <div id="stravaActivities"></div>
@@ -139,7 +143,7 @@
       <p>iPhone: no Safari, Compartilhar → Adicionar à Tela de Início. Android: no Chrome, menu ⋮ → Instalar app.</p>
       <button id="installBtn" hidden>Instalar aplicativo</button>
     </div>
-    <footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Versão 2.3.0.</footer>
+    <footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Versão 2.4.0.</footer>
   </section>
 </section>
 
