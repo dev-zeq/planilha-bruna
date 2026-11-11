@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {durationSeconds,durationText,paceText,numberOrNull,validateLegacy,legacyUUID,legacyOperations,projectSnapshot,monday,isoLocal,escapeHTML} from '../core.mjs';
+import {durationSeconds,durationText,paceText,numberOrNull,validateLegacy,legacyUUID,legacyOperations,projectSnapshot,monday,isoLocal,escapeHTML,lockWithTakeover} from '../core.mjs';
 const legacy={id:'seed0',date:'2026-11-09',athlete:'Ambos',time:'Manhã',name:'Rodagem',desc:'12 km',status:'done',distance:12};
 const members=[{display_name:'Ezequiel',user_id:'a'},{display_name:'Bruna',user_id:'b'},{display_name:'Renato Cirino',user_id:'c'}];
 test('duration and pace use seconds and carry minutes',()=>{assert.equal(durationSeconds('01:02:03'),3723);assert.equal(durationSeconds(''),null);assert.throws(()=>durationSeconds('00:99:00'));assert.equal(durationText(3723),'01:02:03');assert.equal(paceText(10,2399),'4:00/km');assert.equal(paceText(0,300),'—');assert.throws(()=>numberOrNull(Infinity));assert.throws(()=>numberOrNull(-1));});
@@ -10,3 +10,13 @@ test('Ambos never completes the other athlete or targets Renato implicitly',asyn
 test('optimistic operations preserve other athletes results and predict CAS versions',()=>{const base={sessions:[{id:'s',version:1,title:'A'}],results:[{session_id:'s',user_id:'b',status:'planned',version:1}]};const out=projectSnapshot(base,[{body:{kind:'update',data:{id:'s',title:'B'}}},{body:{kind:'result',data:{session_id:'s',status:'done'}}}],'a');assert.equal(out.sessions[0].version,2);assert.equal(out.results.find(r=>r.user_id==='b').status,'planned');assert.equal(out.results.find(r=>r.user_id==='a').status,'done');assert.equal(base.sessions[0].title,'A');});
 test('optimistic create retry deduplicates and deletion hides session',()=>{assert.equal(projectSnapshot({sessions:[],results:[]},[{body:{kind:'create',data:{id:'s'}}},{body:{kind:'create',data:{id:'s'}}}],'a').sessions.length,1);assert.equal(projectSnapshot({sessions:[{id:'s',version:1}],results:[]},[{body:{kind:'delete',data:{id:'s'}}}],'a').sessions.length,0);});
 test('week starts Monday and UI escapes untrusted descriptions',()=>{assert.equal(isoLocal(monday(new Date(2026,10,15,12))),'2026-11-09');assert.equal(escapeHTML('<img onerror="alert(1)">'),'&lt;img onerror=&quot;alert(1)&quot;&gt;');});
+
+// Minimal Web Locks stand-in: one holder per name, waiters abort on signal, steal always runs.
+function fakeLocks(){const held=new Set();return {held,async request(name,options,callback){
+ if(!options.steal&&held.has(name))return new Promise((_,reject)=>options.signal.addEventListener('abort',()=>reject(Object.assign(Error('aborted'),{name:'AbortError'}))));
+ held.add(name);try{return await callback();}finally{if(!options.steal)held.delete(name);}
+}};}
+test('a free lock runs the task once and returns its value',async()=>{const locks=fakeLocks();let runs=0;assert.equal(await lockWithTakeover('n',async()=>{runs++;return 'ok';},50,locks),'ok');assert.equal(runs,1);assert.equal(locks.held.size,0);});
+test('a lock held by a frozen window is taken over instead of waiting forever',async()=>{const locks=fakeLocks();locks.held.add('n');let runs=0;assert.equal(await lockWithTakeover('n',async()=>{runs++;return 'taken';},20,locks),'taken');assert.equal(runs,1);});
+test('a failing task is reported and never retried through takeover',async()=>{const locks=fakeLocks();let runs=0;await assert.rejects(()=>lockWithTakeover('n',async()=>{runs++;throw Object.assign(Error('boom'),{name:'AbortError'});},20,locks),/boom/);assert.equal(runs,1);});
+test('without Web Locks the task still runs',async()=>{assert.equal(await lockWithTakeover('n',async()=>7,20,null),7);});

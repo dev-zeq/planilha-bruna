@@ -71,3 +71,19 @@ export function projectSnapshot(snapshot,queue,userId) {
  }
  return {sessions:sessions.filter(s=>!s.deleted_at),results};
 }
+
+// Web Locks are shared by every tab and installed-app window of this origin. A window that
+// the system froze in the background keeps its lock indefinitely, which left sign-in waiting
+// forever. Waiters therefore take the lock over after a timeout instead of hanging.
+export async function lockWithTakeover(name,fn,timeout=8000,locks=globalThis.navigator?.locks) {
+ if(!locks) return fn();
+ const controller=new AbortController();
+ let acquired=false;
+ const timer=setTimeout(()=>controller.abort(),timeout);
+ const run=()=>{acquired=true;clearTimeout(timer);return fn();};
+ try{return await locks.request(name,{signal:controller.signal},run);}
+ catch(error){
+  if(acquired||!controller.signal.aborted) throw error;
+  return locks.request(name,{steal:true},run);
+ }finally{clearTimeout(timer);}
+}
