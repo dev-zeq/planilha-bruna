@@ -70,6 +70,8 @@ function sessionCard(s,result,own,stravaPrivate){
   if(result.actual_km!=null)parts.push(fmtKm(result.actual_km)+' km');
   if(result.duration_seconds!=null)parts.push(durationText(result.duration_seconds),paceText(result.actual_km,result.duration_seconds));
   if(result.source==='strava')parts.push(stravaPrivate?'Strava (privado)':'Strava');
+  // Credit the recording device, as the Strava API policy requires for Garmin data.
+  if(result.source_device)parts.push(result.source_device);
   if(result.pending)parts.push('envio pendente');
   outcome=`<p class="result ok">${esc(parts.join(' · '))}</p>`;
  }else if(result?.status==='skipped')outcome=`<p class="result skip">Não realizado${result.pending?' · envio pendente':''}</p>`;

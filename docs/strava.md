@@ -42,7 +42,9 @@ O painel deste aplicativo confirmou capacidade para 10 atletas. A conexão inici
 ## Validação e limites atuais
 
 - Testes de servidor, RLS real em transação revertida, Deno e interface no CI passaram no commit 6e4fb3fefaab8acbd0abbca2e2cdaa18c3110a2b. Testes adicionais do painel privado serão validados no próximo commit.
-- Sincronização manual: corridas dos últimos 30 dias, até 300 atividades consultadas. Cada vínculo exige confirmação e compara a versão do resultado.
+- Sincronização manual: corridas dos últimos 7 dias (Política da API 6.2, cache de até sete dias). Uma rotina diária apaga atividades com mais de 7 dias que não estejam vinculadas a um treino; as vinculadas permanecem porque sustentam o resultado do atleta.
+- Aparelho: o detalhe de cada atividade informa o aparelho de gravação, que é exibido na atividade e no resultado vinculado (Política da API 4.4, atribuição a dados de origem Garmin).
+- Compartilhamento: resultados vindos do Strava só aparecem para o grupo com o consentimento registrado do próprio atleta (Política da API 5.13). Cada vínculo exige confirmação e compara a versão do resultado.
 - Revogação detectada ao usar a API remove dados importados; saída do último grupo também limpa dados e Vault. Webhooks de criação/alteração/exclusão/revogação implementados e assinatura ativada; aguarda-se a próxima corrida nova externa para observar esse evento real.
 - Casal validado em produção: Bruna 43 atividades e Ezequiel 36, sem duplicação ao repetir; um vínculo individual persistente em cada conta e isolamento com UUIDs reais. Credenciais configuradas exclusivamente no servidor. Pendentes: conferência nos celulares e primeira nova corrida pelo webhook externo. Renato depois, conforme instrução do responsável.
 

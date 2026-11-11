@@ -2,6 +2,10 @@ import {createAutomation} from './automation.mjs';
 export const APP_ORIGIN='https://treinos.paceplus.app';
 export const CALLBACK=APP_ORIGIN+'/';
 export const RUN_TYPES=new Set(['Run','TrailRun','VirtualRun']);
+// The private activity cache is limited to seven days (Strava API Policy 6.2).
+export const SYNC_DAYS=7;
+export const MAX_DEVICE_LOOKUPS=30;
+export function deviceName(a){return typeof a?.device_name==='string'&&a.device_name.trim()?a.device_name.trim().slice(0,120):null;}
 export class PublicError extends Error {constructor(message,status=400){super(message);this.status=status;}}
 export function scopesFrom(value){return String(value||'').split(/[ ,]+/).filter(Boolean);}
 export function requireScopes(scopes){if(!scopes.includes('activity:read')&&!scopes.includes('activity:read_all'))throw new PublicError('Autorize a leitura das suas atividades no Strava.');}
@@ -9,7 +13,7 @@ export function normalizeActivity(a){
  if(!a||!RUN_TYPES.has(a.sport_type||a.type))return null;
  const id=Number(a.id),distance=Number(a.distance),moving=Number(a.moving_time),elapsed=Number(a.elapsed_time);
  if(!Number.isSafeInteger(id)||id<=0||!Number.isFinite(distance)||distance<0||distance>1000000||!Number.isInteger(moving)||moving<0||moving>31536000||!Number.isInteger(elapsed)||elapsed<0||elapsed>31536000||!Number.isFinite(Date.parse(a.start_date))||!/^\d{4}-\d{2}-\d{2}T/.test(a.start_date_local||''))throw new PublicError('O Strava retornou uma atividade inválida.',502);
- return {activity_id:id,name:String(a.name||'Corrida').slice(0,200),sport_type:a.sport_type||a.type,start_date:new Date(a.start_date).toISOString(),local_date:a.start_date_local.slice(0,10),distance_m:distance,moving_seconds:moving,elapsed_seconds:elapsed};
+ return {activity_id:id,name:String(a.name||'Corrida').slice(0,200),sport_type:a.sport_type||a.type,start_date:new Date(a.start_date).toISOString(),local_date:a.start_date_local.slice(0,10),distance_m:distance,moving_seconds:moving,elapsed_seconds:elapsed,device_name:deviceName(a)};
 }
 export function validateTokens(data,nowSeconds){
  if(!data||typeof data.access_token!=='string'||!data.access_token||typeof data.refresh_token!=='string'||!data.refresh_token||!Number.isSafeInteger(data.expires_at)||data.expires_at<=nowSeconds)throw new PublicError('Resposta de autorização inválida do Strava.',502);
@@ -108,15 +112,22 @@ export function createHandler({createClient,env,fetcher=fetch,cryptoAPI=crypto,n
    }
    if(body.action==='sync'){
     const imported=await withToken(uid,async(token,lease)=>{
-     const items=[],after=Math.floor(now()/1000)-30*86400;
+     const items=[],after=Math.floor(now()/1000)-SYNC_DAYS*86400,headers={Authorization:'Bearer '+token};
      for(let page=1;page<=3;page++){
-      const batch=await provider('/api/v3/athlete/activities?after='+after+'&per_page=100&page='+page,{headers:{Authorization:'Bearer '+token}});
+      const batch=await provider('/api/v3/athlete/activities?after='+after+'&per_page=100&page='+page,{headers});
       if(!Array.isArray(batch))throw new PublicError('Resposta de atividades inválida.',502);
       for(const a of batch){const normalized=normalizeActivity(a);if(normalized)items.push(normalized);}
       if(batch.length<100)break;
      }
+     // The list has no recording device; the detail does. It is needed to credit the
+     // device (Policy 4.4). A failed lookup only leaves that credit out, except a
+     // revoked connection, which must still clean up.
+     for(const item of items.slice(0,MAX_DEVICE_LOOKUPS)){
+      try{const detail=await provider('/api/v3/activities/'+item.activity_id,{headers},false,true);item.device_name=deviceName(detail);}
+      catch(e){if(e instanceof PublicError&&e.status===401)throw e;break;}
+     }
      return rpc('strava_server_import',{p_user:uid,p_lease:lease,p_items:items});
-    });return reply({imported,days:30});
+    });return reply({imported,days:SYNC_DAYS});
    }
    if(body.action==='link'){
     const v=linkManyInput(body);await rpc('strava_server_link_many',{p_user:uid,p_activities:v.activities,p_session:v.session,p_version:v.version});return reply({linked:true});
