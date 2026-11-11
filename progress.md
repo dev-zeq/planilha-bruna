@@ -403,3 +403,11 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Arquivos finais: progress.md, README.md, docs/strava.md, supabase/strava-probe-cast.sql e tests/strava-automation-rls.sql. SQL corretivo testado antes de registrar este commit; não há nova alteração de frontend/servidor após o CI aprovado.
 - Para testar: abrir Meu Strava na versão 2.2.0; as novas corridas serão importadas após chegarem ao Strava. Para agrupar gravações do relógio, marcar as partes → Vincular atividades selecionadas → escolher o treino → conferir distância/tempo/pace → confirmar. O vínculo continua explícito para não misturar treino da manhã com corrida da noite.
 - Pendentes: primeira nova corrida externa pelo webhook; testes simultâneos iPhone/Android/computador, offline e recuperação de senha; Renato posteriormente. Auditoria de Auth/pg_net e limitações documentadas na etapa 19.
+
+
+## 2026-11-11 — Etapa 21: cabeçalho com identidade do aplicativo
+
+- Pedido do responsável: substituir o emoji pelo ícone do aplicativo e remover os três nomes abaixo do título.
+- Cabeçalho usa icon.svg já existente, título Treinos e alinhamento compacto responsivo. Ícone decorativo com alt vazio evita leitura duplicada por leitor de tela. Descrição da página generalizada, sem nomes pessoais. Identificação da conta continua na área autenticada.
+- Versão preparada 2.2.1 e cache do service worker incrementado para atualizar a PWA instalada. Arquivos: index.html, styles.css, package.json, sw.js e progress.md. Sem alteração de banco, credenciais ou sincronização.
+- Próximo passo: verificações existentes, CI e conferência visual no domínio após publicar; não marcar publicado antes da confirmação.
