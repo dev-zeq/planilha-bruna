@@ -165,3 +165,17 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Nenhuma chave Resend criada, copiada, publicada ou reutilizada de outro projeto. Antes de configurar, criar credencial exclusiva com permissão mínima de envio para este domínio.
 - Pendência imediata: usuário entrar no Porkbun na aba aberta e avisar. Depois adicionar/verificar os registros DNS, configurar a credencial SMTP diretamente no painel, salvar e validar entrega/cadastro/login.
 - main e PR continuam no estado anterior: implantação nova ainda pendente. Esta etapa altera apenas documentação em progress.md.
+
+
+## 2026-11-11 — Etapa 5: registros DNS aplicados
+
+- Após login do usuário, inspecionados os 12 registros DNS existentes de paceplus.app no Porkbun.
+- Adicionados exatamente três registros novos, TTL 600, conferidos na listagem final de 15 registros:
+  - TXT resend._domainkey.paceplus.app, chave DKIM pública apresentada pelo Resend.
+  - CNAME rsend.paceplus.app → rsend-sae1.forge.rmta.net.
+  - CNAME send.paceplus.app → send.forge.rmta.net.
+- Preservados os registros A/CNAME do site, api, admin, www e treinos; também MX, SPF, DKIM e DMARC já existentes. Nameservers não alterados.
+- Clicado “I've already added the records” no Resend. Evidência posterior: evento “DNS verified”; domínio global ainda Pending / Verifying domain; CNAME send Verified, DKIM e rsend ainda Pending. Não considerar envio pronto até status global Verified.
+- Conferida a criação de chave de API: o formulário permite Sending access; a lista de escopo ainda não mostra paceplus.app enquanto a verificação está pendente. Formulário cancelado; nenhuma chave criada, nenhum segredo lido.
+- Próximo passo concreto: após liberação, criar Treinos-Supabase-SMTP com Sending access restrito a paceplus.app e registrar apenas no SMTP do Supabase planilha-treinos. A criação de credencial permanente no navegador exige confirmação no momento da ação; aguardando confirmação do usuário.
+- SMTP continua preparado e não salvo; nenhum teste de e-mail enviado. Sem alterações de código ou de esquema nesta etapa. progress.md atualizado no commit desta seção.
