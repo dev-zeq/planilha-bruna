@@ -1,6 +1,6 @@
 # Strava — integração individual
 
-Estado em 11/11/2026: aplicativo cadastrado; capacidade confirmada de 10 atletas. OAuth, sincronização manual e interface implementados no PR #2. Função strava v1 publicada no projeto Treinos; credenciais salvas no servidor com autorização explícita do responsável. PR #2 integrado à main; publicação concluída; OAuth, sincronização repetida sem duplicação e vínculo individual da Bruna validados em produção. Ezequiel aguarda conexão própria. Nenhum token ou segredo foi copiado do Pace Plus.
+Estado em 11/11/2026: aplicativo cadastrado; capacidade confirmada de 10 atletas. OAuth, sincronização manual e interface implementados no PR #2. Função strava v1 publicada no projeto Treinos; credenciais salvas no servidor com autorização explícita do responsável. PR #2 integrado à main; publicação concluída; OAuth, sincronização repetida sem duplicação e vínculo individual da Bruna validados em produção. Ezequiel também validado com conexão própria e sincronização repetida. Nenhum token ou segredo foi copiado do Pace Plus.
 
 ## Cadastro preparado
 
@@ -44,7 +44,7 @@ O painel deste aplicativo confirmou capacidade para 10 atletas. A conexão inici
 - Testes de servidor, RLS real em transação revertida, Deno e interface no CI passaram no commit 6e4fb3fefaab8acbd0abbca2e2cdaa18c3110a2b. Testes adicionais do painel privado serão validados no próximo commit.
 - Sincronização manual: corridas dos últimos 30 dias, até 300 atividades consultadas. Cada vínculo exige confirmação e compara a versão do resultado.
 - Revogação detectada ao usar a API remove dados importados; saída do último grupo também limpa dados e Vault. Webhooks para revogação/alteração remota imediata ainda pendentes: esta é uma versão inicial em validação, não uma integração automática completa.
-- Bruna validada em produção: OAuth, 43 atividades sem duplicação ao repetir, vínculo individual persistente e isolamento com UUIDs reais. Credenciais já configuradas. Pendentes: conexão própria do Ezequiel e conferência nos celulares. Renato depois, conforme instrução do responsável.
+- Casal validado em produção: Bruna 43 atividades e Ezequiel 36, sem duplicação ao repetir; um vínculo individual persistente em cada conta e isolamento com UUIDs reais. Credenciais configuradas exclusivamente no servidor. Pendentes: conferência nos celulares e webhooks. Renato depois, conforme instrução do responsável.
 
 ## Ativação pelo responsável
 

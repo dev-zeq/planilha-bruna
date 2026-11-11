@@ -9,7 +9,7 @@ Atualizado em: 2026-11-11
 - **Objetivo:** planejamento de treinos compartilhado entre três atletas (Ezequiel, Bruna e Renato Cirino), com contas individuais e resultados separados.
 - **Hospedagem:** GitHub Pages.
 - **Backend dedicado:** Supabase, projeto `planilha-treinos` (referência `hzcqlygvzxxnvpywzppp`), região São Paulo, plano gratuito.
-- **Integração futura:** Strava, usando autorização individual de cada atleta.
+- **Strava:** conexão e sincronização manual individuais validadas para Ezequiel/Bruna; Renato depois. Webhooks ainda pendentes.
 - **Aplicativo Pace Plus principal:** separado deste projeto; evitar mudanças nele sem necessidade.
 
 ## Concluído / confirmado nas conversas
@@ -24,9 +24,11 @@ Atualizado em: 2026-11-11
 
 ## Ponto atual — publicado em 11/11/2026
 
-**Versão 2.0.1 publicada e disponível em https://treinos.paceplus.app/.**
+**Versão 2.1.0 publicada e disponível em https://treinos.paceplus.app/. Agenda compartilhada e sincronização manual Strava individual validadas para Ezequiel e Bruna.**
 
-- PR integrado: https://github.com/dev-zeq/planilha-bruna/pull/1.
+- PRs integrados: https://github.com/dev-zeq/planilha-bruna/pull/1 (agenda/Auth) e https://github.com/dev-zeq/planilha-bruna/pull/2 (Strava).
+- Publicação Strava: merge 1ab4d6c5567716391f7f717a4e1d92933f545960; Pages 43076731245 e testes main 43076732516 aprovados.
+- Strava real: Bruna 43 atividades, Ezequiel 36; uma vinculação individual em cada conta, repetição sem duplicações e persistência após recarga confirmadas. Dados da API privados por atleta; registros manuais compartilhados. Renato continua membro sem conexão própria.
 - Merge na main: https://github.com/dev-zeq/planilha-bruna/commit/7e478b780852a468e36c6d30c8525b40926b83ce.
 - Código validado antes do merge: eb8fae7809e823cb9350d19525e05a8f0b54b26d. CI push e PR verdes: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066178888 e https://github.com/dev-zeq/planilha-bruna/actions/runs/43066190957.
 - CI da main: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066359054; publicação GitHub Pages: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066361410. Ambos aprovados.
@@ -35,7 +37,7 @@ Atualizado em: 2026-11-11
 - Interface publicada carregou o login com SDK real e exibiu versão 2.0.1. Botão de atualização do PWA executado no navegador com sucesso.
 - **Validação real realizada:** criação, edição, conclusão individual e persistência após recarregar pela sessão Ezequiel no domínio publicado; resultado não concluiu Bruna/Renato. Permissões conferidas com os três UUIDs reais no Postgres, em transação revertida. Ainda pendentes: sessões simultâneas em aparelhos diferentes, login por senha após sair/recuperação real e offline específico em Safari/iPhone e Android.
 - **Migração realizada:** backup exportado/preservado; 8 treinos importados para Ezequiel e Bruna, 3 resultados (42,6 km) somente para Ezequiel. Bruna mantém resultados próprios; Renato continua no grupo, sem inclusão nesses treinos antigos. Reexecução idempotente confirmada.
-- **Próximo passo:** integração individual com Strava, primeiro Ezequiel/Bruna e posteriormente Renato. Agenda migrada e teste técnico removido. Também faltam testes em aparelhos distintos, recuperação e offline móvel. Guia no README.md.
+- **Próximo passo:** validar nos celulares e implementar webhooks para alterações/revogação remotas. Strava atualmente sincroniza pelo botão, últimos 30 dias; Renato será conectado posteriormente. Permanecem testes de recuperação e offline móvel. Agenda migrada e teste técnico removido. Guia no README.md e docs/strava.md.
 
 ## Checklist original (histórico; execução detalhada abaixo)
 
@@ -338,3 +340,18 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Arquivos desta etapa: progress.md e docs/strava.md. Código de aplicação da versão 2.1.0 não precisou de correção nesta validação.
 - Concluído para Bruna: OAuth, importação real, repetição sem duplicação, vínculo individual, persistência após recarga e isolamento por RLS.
 - Pendências: conectar e validar Ezequiel com a própria sessão Strava; Renato posteriormente conforme combinado. Testes de celular/offline/recuperação e webhooks continuam pendentes. Sincronização atual usa botão manual, não é atualização automática contínua.
+
+
+## 2026-11-11 — Etapa 16: conexões individuais do casal validadas
+
+- Responsável informou que concluiu o acesso. Sessões verificadas: Treinos Ezequiel; Strava Ezequiel Miranda, atleta 36486890. Ao consultar o banco, a conexão e a sincronização do Ezequiel já estavam concluídas pelo uso do aplicativo, com 36 atividades e um resultado vinculado. Nenhum vínculo foi reatribuído pelo agente nesta etapa.
+- Uma nova autorização havia sido iniciada pela tela anterior ainda mostrando estado de conexão ausente; ao identificar a conexão válida, fluxo repetido cancelado sem substituir ou desconectar a autorização existente. Depois o painel exibiu a conexão correta.
+- Executada novamente Sincronizar atividades na conta Ezequiel: 36 atividades verificadas, sem duplicação; Bruna permaneceu com 43.
+- Recarregada a aplicação: sessão Ezequiel preservada, agenda carregada, resultado próprio marcado Strava (privado) persistente. Dados Strava da Bruna não exibidos nessa conta.
+- Teste RLS em BEGIN/ROLLBACK com papéis authenticated e UUIDs reais: Ezequiel lê 36 atividades/um resultado próprio, Bruna lê 43/um próprio; Renato lê zero conexões/atividades/resultados Strava. Assertions aprovadas; consulta de outro UUID não libera dados privados. Sem mudanças de dados nesse teste.
+- Mantidas 8 sessões da agenda e Renato sem integração. Resultados já registrados pelo usuário preservados; nenhum atleta concluído automaticamente. Não publicar métricas, nomes de atividades ou IDs das corridas privadas no GitHub.
+- Arquivos modificados: progress.md e docs/strava.md. Sem mudanças adicionais no schema/Edge Function/código de aplicação nesta etapa documental.
+- Commits de referência: implementação 6e4fb3fefaab8acbd0abbca2e2cdaa18c3110a2b; lock/testes 0ca546ef86726c70d770b19481fd3cba40b5e633; teste móvel 0f939158ab47d02408b44ef0832f1c15f8de2f91; merge PR #2 1ab4d6c5567716391f7f717a4e1d92933f545960; validação Bruna 2639a8513df75e15848c544e54a1e1d532ebdd5d. Esta etapa recebe commit documental próprio.
+- Funcionando e verificado para ambos: login individual, autorização própria, importação manual, reexecução idempotente, resultado individual persistente e isolamento. Importação é dos últimos 30 dias, acionada pelo botão; não há sincronização contínua/webhooks ainda.
+- Pendências reais: testes simultâneos no iPhone/Android/computador; offline e recuperação de senha nos aparelhos; webhooks para mudanças/exclusões/revogação no Strava; conexão Renato quando disponível. Não anunciar essas pendências como concluídas.
+- Teste nos celulares: abrir treinos.paceplus.app, aplicar Nova versão disponível se aparecer, confirmar versão 2.1.0; cada um entrar com sua conta; abrir Meu Strava → Sincronizar atividades; usar Vincular a um treino somente para o próprio resultado correspondente. A agenda é compartilhada; dados originados da API ficam individuais.
