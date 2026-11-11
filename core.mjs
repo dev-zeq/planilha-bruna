@@ -87,3 +87,14 @@ export async function lockWithTakeover(name,fn,timeout=8000,locks=globalThis.nav
   return locks.request(name,{steal:true},run);
  }finally{clearTimeout(timer);}
 }
+
+// One visual state per workout card, for the athlete being viewed. Colour always comes with
+// this written label, so it never carries the meaning alone.
+export const SESSION_STATES={done:'Feito',skipped:'Não realizado',today:'Hoje',late:'Atrasado',open:'A definir',planned:''};
+export function sessionState(session,result,todayISO) {
+ if(result?.status==='done') return 'done';
+ if(result?.status==='skipped') return 'skipped';
+ if(session.training_date===todayISO) return 'today';
+ if(session.training_date<todayISO) return 'late';
+ return session.state==='open'?'open':'planned';
+}

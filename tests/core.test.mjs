@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {durationSeconds,durationText,paceText,numberOrNull,validateLegacy,legacyUUID,legacyOperations,projectSnapshot,monday,isoLocal,escapeHTML,lockWithTakeover} from '../core.mjs';
+import {durationSeconds,durationText,paceText,numberOrNull,validateLegacy,legacyUUID,legacyOperations,projectSnapshot,monday,isoLocal,escapeHTML,lockWithTakeover,sessionState,SESSION_STATES} from '../core.mjs';
 const legacy={id:'seed0',date:'2026-11-09',athlete:'Ambos',time:'Manhã',name:'Rodagem',desc:'12 km',status:'done',distance:12};
 const members=[{display_name:'Ezequiel',user_id:'a'},{display_name:'Bruna',user_id:'b'},{display_name:'Renato Cirino',user_id:'c'}];
 test('duration and pace use seconds and carry minutes',()=>{assert.equal(durationSeconds('01:02:03'),3723);assert.equal(durationSeconds(''),null);assert.throws(()=>durationSeconds('00:99:00'));assert.equal(durationText(3723),'01:02:03');assert.equal(paceText(10,2399),'4:00/km');assert.equal(paceText(0,300),'—');assert.throws(()=>numberOrNull(Infinity));assert.throws(()=>numberOrNull(-1));});
@@ -20,3 +20,15 @@ test('a free lock runs the task once and returns its value',async()=>{const lock
 test('a lock held by a frozen window is taken over instead of waiting forever',async()=>{const locks=fakeLocks();locks.held.add('n');let runs=0;assert.equal(await lockWithTakeover('n',async()=>{runs++;return 'taken';},20,locks),'taken');assert.equal(runs,1);});
 test('a failing task is reported and never retried through takeover',async()=>{const locks=fakeLocks();let runs=0;await assert.rejects(()=>lockWithTakeover('n',async()=>{runs++;throw Object.assign(Error('boom'),{name:'AbortError'});},20,locks),/boom/);assert.equal(runs,1);});
 test('without Web Locks the task still runs',async()=>{assert.equal(await lockWithTakeover('n',async()=>7,20,null),7);});
+
+test('card state: result wins, then today, late, and the plan for future days',()=>{
+ const day=d=>({training_date:d,state:'planned'}),today='2026-11-11';
+ assert.equal(sessionState(day('2026-11-01'),{status:'done'},today),'done');
+ assert.equal(sessionState(day(today),{status:'skipped'},today),'skipped');
+ assert.equal(sessionState(day(today),{status:'planned'},today),'today');
+ assert.equal(sessionState(day('2026-11-10'),undefined,today),'late');
+ assert.equal(sessionState(day('2026-11-12'),undefined,today),'planned');
+ assert.equal(sessionState({training_date:'2026-11-12',state:'open'},undefined,today),'open');
+ assert.equal(sessionState({training_date:'2026-11-10',state:'open'},undefined,today),'late');
+ for(const state of ['done','skipped','today','late','open'])assert.ok(SESSION_STATES[state]);assert.equal(SESSION_STATES.planned,'');
+});
