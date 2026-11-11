@@ -34,8 +34,8 @@ Atualizado em: 2026-11-11
 - As três contas já aceitaram o convite: e-mails confirmados, senhas definidas e sessões Auth iniciadas. Todos vinculados ao mesmo grupo. Usuário Ezequiel gerencia as três contas; nenhuma senha foi lida ou registrada.
 - Interface publicada carregou o login com SDK real e exibiu versão 2.0.1. Botão de atualização do PWA executado no navegador com sucesso.
 - **Validação real realizada:** criação, edição, conclusão individual e persistência após recarregar pela sessão Ezequiel no domínio publicado; resultado não concluiu Bruna/Renato. Permissões conferidas com os três UUIDs reais no Postgres, em transação revertida. Ainda pendentes: sessões simultâneas em aparelhos diferentes, login por senha após sair/recuperação real e offline específico em Safari/iPhone e Android.
-- **Dados antigos preservados:** nenhuma migração foi executada. Depois de Ezequiel e Bruna entrarem no grupo, exportar o backup de cada aparelho e confirmar a importação. Não preencher resultados do outro atleta automaticamente.
-- **Limpeza confirmada:** o teste técnico foi excluído logicamente e a agenda está sem dados fictícios visíveis ou operações pendentes. **Próximo passo de dados:** exportar backups locais e revisar a confirmação antes da migração; também faltam testes em aparelhos distintos, recuperação e offline móvel. Guia no README.md.
+- **Migração realizada:** backup exportado/preservado; 8 treinos importados para Ezequiel e Bruna, 3 resultados (42,6 km) somente para Ezequiel. Bruna mantém resultados próprios; Renato continua no grupo, sem inclusão nesses treinos antigos. Reexecução idempotente confirmada.
+- **Próximo passo:** integração individual com Strava, primeiro Ezequiel/Bruna e posteriormente Renato. Agenda migrada e teste técnico removido. Também faltam testes em aparelhos distintos, recuperação e offline móvel. Guia no README.md.
 
 ## Checklist original (histórico; execução detalhada abaixo)
 
@@ -249,3 +249,16 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Nenhum dado local antigo apagado ou migrado. Próxima etapa de dados: exportar backup no aparelho que contém os treinos e revisar a confirmação de importação antes de enviar ao Supabase.
 - Permanecem pendentes: teste simultâneo em aparelhos distintos, recuperação real de senha por e-mail e offline específico em Safari/iPhone e Android.
 - Arquivo modificado: progress.md; commit desta etapa documental.
+
+
+## 2026-11-11 — Etapa 10: backup e migração dos dados locais
+
+- Backup real exportado pelo botão Exportar dados antigos da sessão aberta. O evento de download não foi reportado pela automação, mas o arquivo foi localizado em Downloads, lido e validado pelo validador da aplicação.
+- Arquivo: backup-local-treinos-2026-11-11.json, 2.326 bytes. SHA-256: c4168f03a6aef272abc7203002e8a2e5fd366b74d0d8ae40cf0b81d1e5054d7d. Cópia persistente disponibilizada ao usuário; original local intacto. Conteúdo completo não foi publicado no GitHub.
+- Encontrados 8 treinos entre 09 e 15/11/2026, todos com atleta Ambos (Ezequiel/Bruna); 3 realizados, soma 42,6 km. Confirmado com o usuário que a restrição ao casal é somente nesta importação; Renato continua no grupo e terá conexão própria depois.
+- Executadas 11 operações pela mesma RPC apply_training_operation da aplicação, dentro de uma transação com papel authenticated e auth.uid do Ezequiel. Usados o conversor legacyOperations e os mesmos IDs determinísticos/recibos do frontend. Sem credenciais administrativas no navegador.
+- Resultado confirmado no banco: 8 sessões ativas; destinatários somente Ezequiel/Bruna; 3 resultados do Ezequiel (42,6 km), zero resultados da Bruna/Renato. Nenhum resultado atribuído ao outro atleta automaticamente.
+- Reexecutadas as mesmas 11 operações para validar idempotência: permaneceu exatamente em 8 sessões e 3 resultados, sem duplicação.
+- Interface publicada atualizada: 8 treinos visíveis, Ezequiel com resultados e Bruna planejada. O total de pendências com filtro Todos conta cada destinatário individualmente.
+- Nenhum dado local apagado. Sem nova migração de schema ou mudança de código nesta etapa.
+- Próximo passo: preparar OAuth Strava exclusivo deste aplicativo, sem reutilizar segredos do Pace Plus; autorizações individuais e importação privada por atleta.
