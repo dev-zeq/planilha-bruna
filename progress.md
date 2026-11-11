@@ -305,3 +305,5 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Acrescentados testes de interface para painel privado, limpeza na troca de conta, sincronização manual e vínculo explícito com CAS. Ainda aguardam CI deste novo commit.
 - Arquivos desta etapa: deno.lock, .github/workflows/tests.yml, tests/mock-supabase.js, tests/browser-scenarios.js, docs/strava.md, progress.md.
 - Pendências: credenciais Strava no servidor, publicação da interface, OAuth real de Bruna/Ezequiel, validação da sincronização/vínculo/repetição e celulares. Webhooks permanecem pendentes; não anunciar sincronização automática completa.
+
+- CI do commit 0ca546e: cenários funcionais Strava passaram e lockfile congelado validou. Verificação de largura falhou porque o relatório técnico do teste usa um pre sem quebra; corrigido o próprio relatório para quebrar linhas, mantendo a detecção de overflow na aplicação e acrescentando diagnóstico de elementos. Revalidação pendente.
