@@ -10,7 +10,7 @@
   let filters=[],start=0,end=Infinity,limit=Infinity;
   const q={select(){return q;},eq(k,v){filters.push(r=>r[k]===v);return q;},is(k,v){filters.push(r=>(r[k]??null)===v);return q;},in(k,v){filters.push(r=>v.includes(r[k]));return q;},order(){return q;},limit(n){limit=n;return q;},range(a,b){start=a;end=b;return q;},then(resolve){resolve({data:structuredClone(tables[table].filter(r=>filters.every(f=>f(r))).slice(start,Math.min(end+1,limit))),error:null});}};return q;
  };
- const client={from:query,async rpc(name,{op_id,body}={}){
+ const client={functions:{invoke:async()=>({data:{configured:false,connection:null}})},from:query,async rpc(name,{op_id,body}={}){
   if(state.offline)return {error:{message:'Failed to fetch'}};
   if(name==='claim_training_invitation')return {data:'g'};
   if(state.operations.has(op_id))return {data:null};

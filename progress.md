@@ -275,3 +275,20 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Renato continua como membro, sem atividades antigas migradas para ele; conexão Strava dele será feita posteriormente, conforme esclarecimento do usuário.
 - Próximo passo: usuário concluir cadastro/aceite na aba preparada; então implementar OAuth no servidor, armazenamento protegido, importação individual e testes, conferindo capacidade do aplicativo.
 - Arquivos: docs/strava.md e progress.md. Branch feat/strava-individual-sync reservada para o desenvolvimento; nenhuma integração foi anunciada como pronta.
+
+
+## 2026-11-11 — Etapa 12: implementação Strava em desenvolvimento
+
+- Usuário concluiu cadastro/aceite do aplicativo na conta da Bruna. Strava exige upload do ícone antes de exibir a configuração; ícone PNG 512x512 convertido fielmente do SVG do app.
+- Upload automatizado bloqueado pela permissão da extensão para arquivos locais. Ícone disponibilizado para seleção manual no botão Carregar. Não ampliadas permissões da extensão, não lidos Client Secret/tokens, nem alterado o Pace Plus.
+- Branch: feat/strava-individual-sync. Código ainda NÃO integrado à main; produção segue 2.0.1.
+- Aplicadas três migrações dedicadas: strava_private_individual_connections, strava_vault_variable_resolution, strava_membership_and_vault_cleanup. Fontes SQL em supabase/strava-*.sql.
+- Conexões/atividades com leitura exclusiva por usuário, tokens cifrados no Vault e states privados com expiração/uso único. Funções públicas de servidor com EXECUTE somente service_role. Nenhum segredo no frontend.
+- Resultado importado identificado por source=strava e visível somente ao próprio atleta. Resultados manuais/backup mantêm leitura compartilhada. Origem protegida contra alteração pelo cliente.
+- Edge Function implementada em supabase/functions/strava: valida JWT com Auth, vínculo ao grupo, origem/CORS, callback fixo, scopes, state vinculado ao UUID; renova tokens sob lease, importa corridas dos últimos 30 dias sem duplicar, vincula somente por confirmação/versão e desconecta removendo dados Strava.
+- Interface 2.1.0 em desenvolvimento: painel Meu Strava, conexão, sincronização manual, atividades privadas e vínculo confirmado ao treino. Callback capturado/removido da URL antes de inicializar Supabase Auth para evitar confusão entre códigos OAuth.
+- Testes locais: sete casos core + onze casos do servidor Strava passaram; sintaxe dos módulos passou. tests/strava-rls.sql passou no banco real com usuários/tokens sintéticos, fixtures revertidas: Vault cifrado, state isolado/uso único, lease, importação idempotente, RPCs negadas ao navegador/anônimo, dados e resultados privados, origem protegida e limpeza preservando resultados manuais.
+- Falhas corrigidas durante aplicação: alias PL/pgSQL no bloco GRANT (migração revertida antes de reaplicar) e variável secret ambígua com a view Vault (migração corretiva versionada).
+- Advisor de schema: INFO esperado para tabelas privadas com RLS sem policies. Advisor Auth relata proteção de senhas vazadas desativada; não foi alterado plano/assinatura do projeto.
+- Pendentes: CI de navegador/Deno e lockfile, finalizar ícone/cadastro, configurar credenciais no servidor, implantar função, autorização e testes reais de Ezequiel/Bruna. Webhooks de revogação/alteração ainda não implementados; não considerar integração completa/pronta para produção.
+- Arquivos: supabase/strava-individual.sql, strava-vault-fix.sql, strava-revocation-cleanup.sql, supabase/functions/strava/*, strava-client.mjs, app.js, index.html, sw.js, manifest.webmanifest, icon-512.png, package.json, tests/strava-*, tests/mock-supabase.js, .github/workflows/tests.yml, .gitignore e progress.md.
