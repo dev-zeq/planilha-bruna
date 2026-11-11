@@ -325,3 +325,16 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 
 - Status autenticado real na versão 2.1.0 confirmou servidor configurado: painel Meu Strava exibiu “Nenhuma conta Strava conectada” e botão Conectar habilitado, sem erro. Agenda manteve os 8 treinos/3 resultados e zero pendências.
 - Preparado login da Bruna no Treinos (bru777@hotmail.com), após sair da sessão Ezequiel sem pendências. Strava permanece Bruna. Intervenção necessária: responsável inserir a senha da Bruna diretamente no aplicativo e entrar; senha não solicitada no chat nem conhecida pelo agente. Não iniciada autorização com identidades divergentes.
+
+
+## 2026-11-11 — Etapa 15: OAuth e sincronização reais da Bruna validados
+
+- Responsável entrou como Bruna no Treinos e aceitou pessoalmente o consentimento de leitura no Strava. Callback concluiu no domínio definitivo, sem código OAuth persistente na barra; painel identificou Bruna Oliveira.
+- Sincronização real pelo botão da interface importou 43 corridas dos últimos 30 dias. Segunda execução permaneceu exatamente em 43 registros; zero atividades atribuídas a Ezequiel/Renato, 8 sessões da agenda preservadas.
+- Vinculada explicitamente pela interface a corrida de segunda-feira ao treino correspondente da Bruna; somente um resultado source=strava criado para ela. Nenhum resultado dos demais atletas foi concluído pelo vínculo.
+- Recarregado o aplicativo: resultado individual permaneceu salvo, com marca Strava (privado), distância, tempo em movimento e pace. Métricas e IDs das atividades reais não são publicados nesta documentação.
+- Teste RLS com papéis authenticated e UUIDs reais em BEGIN/ROLLBACK: Bruna lê suas 43 atividades e seu resultado importado; Ezequiel não lê a conexão/atividades/resultado dela; Renato não lê atividades/resultados dela. Assertions aprovadas, sem alteração de dados.
+- Nenhum segredo/token lido para validação; uso do Vault permanece exclusivamente no servidor.
+- Arquivos desta etapa: progress.md e docs/strava.md. Código de aplicação da versão 2.1.0 não precisou de correção nesta validação.
+- Concluído para Bruna: OAuth, importação real, repetição sem duplicação, vínculo individual, persistência após recarga e isolamento por RLS.
+- Pendências: conectar e validar Ezequiel com a própria sessão Strava; Renato posteriormente conforme combinado. Testes de celular/offline/recuperação e webhooks continuam pendentes. Sincronização atual usa botão manual, não é atualização automática contínua.
