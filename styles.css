@@ -14,6 +14,8 @@
   --warn: #8b5a0b;
   --warn-bg: #fff3d6;
   --warn-line: #dfa032;
+  --today-bg: #dff1ee;
+  --skip-bg: #eef1ef;
   --bad: #9e3126;
   --bad-bg: #fee8e6;
   --tabs-h: 62px;
@@ -39,6 +41,8 @@
     --warn: #f0c36b;
     --warn-bg: #3a2f14;
     --warn-line: #b98a2f;
+    --today-bg: #15403a;
+    --skip-bg: #1b2726;
     --bad: #f3a097;
     --bad-bg: #40201c;
   }
@@ -155,14 +159,18 @@ textarea { min-height: 96px; resize: vertical; }
   border-radius: 14px; padding: 12px; margin-bottom: 8px; overflow-wrap: anywhere;
 }
 /* Card colour follows the workout state; the tag always says it in words too. */
-.entry.done, .entry.today, .entry.late { border-width: 1.5px; }
-.entry.done { border-color: var(--ok); }
-.entry.today { border-color: var(--primary); border-width: 2px; }
-.entry.late { border-color: var(--warn-line); }
+.entry.done, .entry.today, .entry.late, .entry.skipped { border-width: 1.5px; border-left-width: 6px; }
+.entry.done { background: var(--ok-bg); border-color: var(--ok); }
+.entry.today { background: var(--today-bg); border-color: var(--primary); }
+.entry.late { background: var(--warn-bg); border-color: var(--warn-line); }
+.entry.skipped { background: var(--skip-bg); border-color: var(--line-strong); }
+.entry.done button.secondary, .entry.skipped button.secondary { background: var(--card); }
 .entry.skipped .head strong, .entry.skipped .meta, .entry.skipped .desc { color: var(--text-2); }
-.entry .tag.done { background: var(--ok-bg); color: var(--ok); }
+.entry .tag.done { background: var(--ok); color: var(--card); }
+.entry .tag.late { background: var(--warn-line); color: #2b1c00; }
 .entry .tag.today { background: var(--primary); color: var(--on-primary); }
 .entry .tag.skipped, .entry .tag.open { background: var(--soft); color: var(--text-2); }
+.entry.skipped .tag.skipped { background: var(--card); }
 .entry .head { display: flex; align-items: flex-start; gap: 8px; }
 .entry .head strong { flex: 1; font-size: 15px; line-height: 1.3; }
 .entry .tag { flex-shrink: 0; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); white-space: nowrap; }
