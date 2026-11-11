@@ -31,11 +31,11 @@ Atualizado em: 2026-11-11
 - Código validado antes do merge: eb8fae7809e823cb9350d19525e05a8f0b54b26d. CI push e PR verdes: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066178888 e https://github.com/dev-zeq/planilha-bruna/actions/runs/43066190957.
 - CI da main: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066359054; publicação GitHub Pages: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066361410. Ambos aprovados.
 - Resend com paceplus.app Verified e SMTP customizado salvo no Supabase dedicado. Confirmação de e-mail mantida.
-- Três contas convidadas; os três convites constam como Delivered no Resend. Cada atleta precisa aceitar o link e definir a senha. Usuário informou que fará a definição das três senhas diretamente; nenhuma senha será registrada aqui.
+- As três contas já aceitaram o convite: e-mails confirmados, senhas definidas e sessões Auth iniciadas. Todos vinculados ao mesmo grupo. Usuário Ezequiel gerencia as três contas; nenhuma senha foi lida ou registrada.
 - Interface publicada carregou o login com SDK real e exibiu versão 2.0.1. Botão de atualização do PWA executado no navegador com sucesso.
-- **Ainda pendente de validação real:** aceitação dos três convites, definição das senhas, login nas três contas, criação/edição/conclusão em aparelhos distintos, recuperação por e-mail e comportamento offline específico no Safari/iPhone e Android.
+- **Validação real realizada:** criação, edição, conclusão individual e persistência após recarregar pela sessão Ezequiel no domínio publicado; resultado não concluiu Bruna/Renato. Permissões conferidas com os três UUIDs reais no Postgres, em transação revertida. Ainda pendentes: sessões simultâneas em aparelhos diferentes, login por senha após sair/recuperação real e offline específico em Safari/iPhone e Android.
 - **Dados antigos preservados:** nenhuma migração foi executada. Depois de Ezequiel e Bruna entrarem no grupo, exportar o backup de cada aparelho e confirmar a importação. Não preencher resultados do outro atleta automaticamente.
-- **Próximo passo:** usuário concluir as senhas e avisar; conferir vínculos ao grupo e validar agenda/resultados nas três contas. Guia de teste no README.md.
+- **Próximo passo imediato:** confirmar a exclusão do treino técnico temporário na caixa de confirmação aberta do navegador. A automação ficou bloqueada nesse diálogo; exclusão ainda não comprovada. Depois conferir a limpeza e preparar a migração dos backups mediante confirmação. Guia de teste no README.md.
 
 ## Checklist original (histórico; execução detalhada abaixo)
 
@@ -222,3 +222,18 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - SMTP e credencial permaneceram salvos após recarregar o dashboard. Chave com Sending access somente para paceplus.app; janela de visualização única fechada após a gravação e área de transferência virtual limpa. Nenhum segredo em código, docs ou logs produzidos.
 - Arquivos desta etapa documental: progress.md e README.md. Sem alteração do código já validado.
 - Pendências: usuário aceitar convites/definir senhas; validar login real e sincronização nos três aparelhos; migrar backups somente após confirmação; verificar recuperação real por e-mail e offline nos dispositivos.
+
+
+## 2026-11-11 — Etapa 8: contas reais e teste funcional em produção
+
+- Ezequiel informou que terminou as três senhas. Consulta real confirmou: três auth.users com email_confirmed_at preenchido, senha cadastrada (somente booleano verificado, sem ler hash/senha), last_sign_in_at e três vínculos ao mesmo grupo 710f069b-8940-451b-bb6e-ef60406fb1b1.
+- Identidade do responsável esclarecida: Ezequiel gerencia sua conta, a da esposa Bruna e a de Renato. Isso não altera a separação de resultados no banco.
+- Sessão aberta no aplicativo identifica Ezequiel e exibe os filtros Todos/Bruna/Ezequiel/Renato.
+- Pela interface real criada a sessão técnica temporária 119858f7-5649-46bc-80dc-a84042d09cc1 em 11/11, para todos, com 1 km planejado. Operação confirmada no servidor.
+- Registrado resultado fictício somente em Ezequiel: 1 km, 300 s, pace calculado 300 s/km. Bruna e Renato permaneceram planned e sem resultados gravados.
+- Recarregada a página; sessão e resultado recuperados do servidor, sem pendências. Editada a descrição pela interface; versão do treino passou de 1 a 2 no banco.
+- Teste SQL com papéis authenticated e auth.uid dos membros reais, em BEGIN/ROLLBACK: Bruna lê o treino, não altera o resultado do Ezequiel e pode inserir resultado próprio; Renato lê o treino e pode editar o planejamento. Assertions passaram. Alterações desse teste foram revertidas.
+- Limpeza iniciada pelo botão Excluir da UI. O confirm nativo abriu, mas os comandos de aceitar/tecla ficaram bloqueados pelo controle do navegador (timeouts de Emulation.setFocusEmulationEnabled). Nenhuma tentativa de contornar por acesso privilegiado.
+- Última consulta: treino técnico ainda ativo, versão 2, deleted_at nulo. Há um resultado fictício ligado a ele. O usuário precisa clicar OK na confirmação aberta; então conferir exclusão lógica e ausência de pendências. Não marcar limpeza como concluída ainda.
+- Dados locais antigos não importados nem apagados. Resultado do teste técnico deve ficar fora da agenda após a exclusão.
+- Arquivo modificado: progress.md, commit desta etapa. Sem mudanças de aplicação/banco além das operações de teste autorizadas.
