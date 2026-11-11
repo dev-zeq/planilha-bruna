@@ -15,9 +15,7 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.5.6
-      - run: deno check --config=supabase/functions/strava/deno.json --lock=supabase/functions/strava/deno.lock supabase/functions/strava/index.ts
-      - name: Export dependency lock
-        run: node -e "console.log('DENO_LOCK='+JSON.stringify(JSON.parse(require('fs').readFileSync('supabase/functions/strava/deno.lock','utf8'))))"
+      - run: deno check --frozen --config=supabase/functions/strava/deno.json --lock=supabase/functions/strava/deno.lock supabase/functions/strava/index.ts
       - run: node tests/browser-smoke.mjs
       - uses: actions/upload-artifact@v4
         if: always()

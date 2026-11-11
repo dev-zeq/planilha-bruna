@@ -13,8 +13,13 @@ try{
  assert(!document.querySelector('#days img'),'XSS title escaped');
  document.querySelector('[data-result]').click();$('actualInput').value='10';$('durationInput').value='00:40:00';submit('resultForm');await wait(()=>state.results.length===1);await wait(statusSynced);
  assert(state.results[0].user_id==='a','result identity A');
+ // Private Strava panel and explicit result link use the current athlete and version.
+ $('stravaPanel').open=true;await wait(()=>$('stravaActivities').textContent.includes('Corrida privada A'));
+ $('stravaSync').click();await wait(()=>$('stravaMessage').textContent.includes('verificada'));assert(state.stravaCalls.some(x=>x.action==='sync'&&x.uid==='a'),'sync tied to A');
+ document.querySelector('[data-strava-link]').click();await wait(()=>$('stravaLinkDialog').open);$('stravaSession').value=state.sessions[0].id;submit('stravaLinkForm');await wait(()=>!$('stravaLinkDialog').open);await wait(()=>state.results[0].source==='strava');assert(state.stravaCalls.some(x=>x.action==='link'&&x.version===1&&x.uid==='a'),'explicit link uses own result CAS');
+ $('stravaPanel').open=false;
  $('logout').click();await wait(()=>!$('authPanel').hidden);await login('b@example.invalid');await wait(statusSynced);
- assert(document.querySelectorAll('.entry').length===1,'B sees shared session');assert(state.results.length===1,'B not automatically complete');assert(document.querySelector('[data-result]').textContent==='Concluir treino','B owns independent action');
+ await wait(()=>$('stravaConnection').textContent.includes('Nenhuma conta'));assert(!$('stravaActivities').textContent.includes('Corrida privada A'),'B cannot see A private panel after account change');assert(!$('stravaConnect').disabled,'B can connect own Strava');assert(document.querySelectorAll('.entry').length===1,'B sees shared session');assert(state.results.length===1,'B not automatically complete');assert(document.querySelector('[data-result]').textContent==='Concluir treino','B owns independent action');
  document.querySelector('[data-edit]').click();$('titleInput').value='B updated';submit('sessionForm');await wait(()=>state.sessions[0].title==='B updated');await wait(statusSynced);
  $('logout').click();await wait(()=>!$('authPanel').hidden);await login('c@example.invalid');await wait(statusSynced);assert($('days').textContent.includes('B updated'),'C sees edit');assert(state.results.length===1,'C independent');
  // Simulated network failure: persist operation and send on retry.
@@ -24,5 +29,5 @@ try{
  document.querySelector('[data-edit="'+state.sessions[0].id+'"]').click();state.sessions[0].version++;$('titleInput').value='Stale edit';submit('sessionForm');await wait(()=>Boolean(document.querySelector('[data-discard]')));assert(state.sessions[0].title==='B updated','conflict preserves remote edit');
  document.querySelector('[data-discard]').click();await wait(()=>$('queuePanel').hidden);await wait(statusSynced);
  document.querySelector('[data-delete="'+state.sessions[0].id+'"]').click();await wait(()=>state.sessions[0].deleted_at);await wait(statusSynced);assert(document.querySelectorAll('.entry').length===1,'deleted session hidden');
- const result=document.createElement('pre');result.id='smoke-result';result.textContent='PASS: invite password setup, login A/B/C, shared create/edit/delete, own completion, escaped HTML, persisted network failure, retry and CAS conflict';document.body.append(result);
+ const result=document.createElement('pre');result.id='smoke-result';result.textContent='PASS: invite password setup, login A/B/C, shared create/edit/delete, own completion, private Strava panel reset, manual sync and explicit CAS link, escaped HTML, persisted network failure, retry and CAS conflict';document.body.append(result);
 }catch(error){const result=document.createElement('pre');result.id='smoke-result';result.textContent='FAIL: '+error.stack+'; STATUS: '+$('statusMessage').textContent;document.body.append(result);}

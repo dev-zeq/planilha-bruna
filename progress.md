@@ -292,3 +292,16 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Advisor de schema: INFO esperado para tabelas privadas com RLS sem policies. Advisor Auth relata proteção de senhas vazadas desativada; não foi alterado plano/assinatura do projeto.
 - Pendentes: CI de navegador/Deno e lockfile, finalizar ícone/cadastro, configurar credenciais no servidor, implantar função, autorização e testes reais de Ezequiel/Bruna. Webhooks de revogação/alteração ainda não implementados; não considerar integração completa/pronta para produção.
 - Arquivos: supabase/strava-individual.sql, strava-vault-fix.sql, strava-revocation-cleanup.sql, supabase/functions/strava/*, strava-client.mjs, app.js, index.html, sw.js, manifest.webmanifest, icon-512.png, package.json, tests/strava-*, tests/mock-supabase.js, .github/workflows/tests.yml, .gitignore e progress.md.
+
+
+## 2026-11-11 — Etapa 13: servidor publicado e CI inicial aprovado
+
+- Commit 6e4fb3fefaab8acbd0abbca2e2cdaa18c3110a2b na branch feat/strava-individual-sync; PR #2: https://github.com/dev-zeq/planilha-bruna/pull/2 (rascunho até validação real).
+- CI push 43075587760 e PR 43075639426 passaram: testes locais, sintaxe, SDK fixo, Deno 2.5.6 e cenários Chrome de agenda em 390px/desktop. Lockfile Deno obtido do CI; próximo commit fixa --frozen.
+- Reexecutado tests/strava-rls.sql no projeto real: sucesso, incluindo limpeza do Vault ao remover último vínculo de grupo; fixtures integralmente revertidas.
+- Strava dashboard confirmou cadastro, ícone finalizado, Client ID 296243, capacidade de 10 atletas. Segredo e tokens permaneceram ocultos; nenhuma conexão real do app ainda autorizada.
+- Edge Function strava v1 publicada ACTIVE exclusivamente em hzcqlygvzxxnvpywzppp. JWT validado internamente por auth.getUser e associação ao grupo; tokens nunca enviados ao frontend. Sem credenciais Strava, ações de conexão permanecem indisponíveis.
+- Tentativa HTTP pelo terminal não pôde resolver DNS no ambiente; não confundir deploy ativo com teste real de resposta autenticada. Verificação pela interface pendente.
+- Acrescentados testes de interface para painel privado, limpeza na troca de conta, sincronização manual e vínculo explícito com CAS. Ainda aguardam CI deste novo commit.
+- Arquivos desta etapa: deno.lock, .github/workflows/tests.yml, tests/mock-supabase.js, tests/browser-scenarios.js, docs/strava.md, progress.md.
+- Pendências: credenciais Strava no servidor, publicação da interface, OAuth real de Bruna/Ezequiel, validação da sincronização/vínculo/repetição e celulares. Webhooks permanecem pendentes; não anunciar sincronização automática completa.
