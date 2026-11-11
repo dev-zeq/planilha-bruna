@@ -9,7 +9,7 @@ Atualizado em: 2026-11-11
 - **Objetivo:** planejamento de treinos compartilhado entre três atletas (Ezequiel, Bruna e Renato Cirino), com contas individuais e resultados separados.
 - **Hospedagem:** GitHub Pages.
 - **Backend dedicado:** Supabase, projeto `planilha-treinos` (referência `hzcqlygvzxxnvpywzppp`), região São Paulo, plano gratuito.
-- **Strava:** conexão e sincronização manual individuais validadas para Ezequiel/Bruna; Renato depois. Webhooks ainda pendentes.
+- **Strava:** conexões individuais de Ezequiel/Bruna, webhook ativo e fila/Cron validados; agrupamento manual confirmado de atividades por treino. Renato depois.
 - **Aplicativo Pace Plus principal:** separado deste projeto; evitar mudanças nele sem necessidade.
 
 ## Concluído / confirmado nas conversas
@@ -24,11 +24,12 @@ Atualizado em: 2026-11-11
 
 ## Ponto atual — publicado em 11/11/2026
 
-**Versão 2.1.0 publicada e disponível em https://treinos.paceplus.app/. Agenda compartilhada e sincronização manual Strava individual validadas para Ezequiel e Bruna.**
+**Versão 2.2.0 publicada e disponível em https://treinos.paceplus.app/. Agenda compartilhada, importação automática Strava e agrupamento confirmado de gravações separadas em um resultado individual.**
 
-- PRs integrados: https://github.com/dev-zeq/planilha-bruna/pull/1 (agenda/Auth) e https://github.com/dev-zeq/planilha-bruna/pull/2 (Strava).
+- PRs integrados: https://github.com/dev-zeq/planilha-bruna/pull/1 (agenda/Auth), https://github.com/dev-zeq/planilha-bruna/pull/2 (Strava) e https://github.com/dev-zeq/planilha-bruna/pull/3 (automação/agrupamento).
+- Publicação 2.2.0: merge f04e2af178925751a4812c8ada4357c5e03d3ebd; CI main 43082589035 e Pages 43082587991 aprovados. Webhook oficial cadastrado; Cron processou prova real de uma atividade existente em uma tentativa, HTTP 200, zero pendências e sem duplicações.
 - Publicação Strava: merge 1ab4d6c5567716391f7f717a4e1d92933f545960; Pages 43076731245 e testes main 43076732516 aprovados.
-- Strava real: Bruna 43 atividades, Ezequiel 36; uma vinculação individual em cada conta, repetição sem duplicações e persistência após recarga confirmadas. Dados da API privados por atleta; registros manuais compartilhados. Renato continua membro sem conexão própria.
+- Strava real: Bruna 43 atividades, Ezequiel 36; vínculos individuais e agrupamento de três partes da manhã em um resultado próprio, repetição sem duplicações e persistência após recarga confirmadas. Dados da API privados por atleta; registros manuais compartilhados. Renato continua membro sem conexão própria.
 - Merge na main: https://github.com/dev-zeq/planilha-bruna/commit/7e478b780852a468e36c6d30c8525b40926b83ce.
 - Código validado antes do merge: eb8fae7809e823cb9350d19525e05a8f0b54b26d. CI push e PR verdes: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066178888 e https://github.com/dev-zeq/planilha-bruna/actions/runs/43066190957.
 - CI da main: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066359054; publicação GitHub Pages: https://github.com/dev-zeq/planilha-bruna/actions/runs/43066361410. Ambos aprovados.
@@ -37,7 +38,7 @@ Atualizado em: 2026-11-11
 - Interface publicada carregou o login com SDK real e exibiu versão 2.0.1. Botão de atualização do PWA executado no navegador com sucesso.
 - **Validação real realizada:** criação, edição, conclusão individual e persistência após recarregar pela sessão Ezequiel no domínio publicado; resultado não concluiu Bruna/Renato. Permissões conferidas com os três UUIDs reais no Postgres, em transação revertida. Ainda pendentes: sessões simultâneas em aparelhos diferentes, login por senha após sair/recuperação real e offline específico em Safari/iPhone e Android.
 - **Migração realizada:** backup exportado/preservado; 8 treinos importados para Ezequiel e Bruna, 3 resultados (42,6 km) somente para Ezequiel. Bruna mantém resultados próprios; Renato continua no grupo, sem inclusão nesses treinos antigos. Reexecução idempotente confirmada.
-- **Próximo passo:** validar nos celulares e implementar webhooks para alterações/revogação remotas. Strava atualmente sincroniza pelo botão, últimos 30 dias; Renato será conectado posteriormente. Permanecem testes de recuperação e offline móvel. Agenda migrada e teste técnico removido. Guia no README.md e docs/strava.md.
+- **Próximo passo:** observar a próxima corrida nova enviada pelo relógio/Zepp/Garmin ao Strava (webhook externo real); validar nos celulares, recuperação e offline móvel. Webhook/worker já ativos e processo de fila validado com releitura real; Renato será conectado posteriormente. Agenda migrada e teste técnico removido. Guia no README.md e docs/strava.md.
 
 ## Checklist original (histórico; execução detalhada abaixo)
 
@@ -387,3 +388,18 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Referências: https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public e https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection.
 - Aplicada strava_automation_live_probe: após ativar, agenda a releitura de uma atividade própria existente na fila, sem inventar atividade ou alterar registro no Strava. O Cron real fará o processamento para validar recuperação; worker acorda somente com trabalho pendente. Timeout HTTP do worker ajustado para 5s, separado do ACK de webhook/challenge de 2s.
 - Documentação de uso e arquitetura atualizada no README.md e docs/strava.md. Pendentes: CI do último ajuste, publicar servidor/interface, ativar assinatura, conferir processamento e agrupamento real de terça-feira. Não marcar a assinatura como ativa até confirmar no Strava.
+
+
+## 2026-11-11 — Etapa 20: automação ativada e agrupamento real publicado
+
+- PR #3 integrado à main pelo merge f04e2af178925751a4812c8ada4357c5e03d3ebd. Head final b2d6ab47100ac82e0f0798f874e9513ce3d07c56 aprovado em 43082424947/43082434300; CI main 43082589035 e Pages 43082587991 aprovados. PWA atualizada pelo botão de nova versão; rodapé 2.2.0.
+- Edge Function strava v3 ACTIVE no projeto Treinos. Primeira tentativa de atualização rejeitada por import_map_path absoluto herdado da versão anterior; reenviado explicitamente deno.json relativo e deploy confirmado. Nenhum segredo copiado para código/chat.
+- Pela sessão Ezequiel no aplicativo, ativada a sincronização automática solicitada pelo responsável. Strava confirmou a assinatura oficial após validar hub.challenge em callback protegido. Configuração do worker armazenada no Vault; cron treinos-strava-inbox ativo a cada minuto e sem HTTP quando não há trabalho pendente.
+- A assinatura foi criada, mas o teste inicial da fila encontrou conversão ausente numeric → bigint ao chamar enqueue. Corrigido em strava_probe_epoch_cast, fonte supabase/strava-probe-cast.sql. Acrescentada assert de probe no teste SQL; execução integral passou com fixtures revertidas. Ativação real preservada.
+- Prova real: enfileirada releitura de uma atividade existente do Ezequiel, sem alterar o Strava nem inventar corrida. Cron processou sozinho entre 19:00 e 19:01 UTC; evento concluído em uma tentativa, sem erro; HTTP worker 200 e sem timeout; cron succeeded. Final: zero pendências, 79 atividades/duas conexões/8 sessões preservadas. Isso valida fila/cron/API em produção; a chegada da próxima corrida nova do relógio ainda é um teste externo adicional, não simulado como concluído.
+- Caso real do responsável: encontradas três gravações matinais consecutivas de terça e uma corrida separada no fim do dia. Selecionadas somente as três da manhã na interface; totais revisados e vinculados explicitamente ao treino principal correspondente da agenda. Um único resultado do Ezequiel, sem concluir Bruna/Renato; notas do resultado identificam origem agrupada. IDs e métricas dessas atividades privadas não são publicados no GitHub.
+- Recarregada a página: resultado agrupado persistente e painel mostrando Sincronização automática ativa. Teste RLS com os UUIDs reais em rollback aprovou três componentes próprios, visibilidade exclusiva por atleta e Renato sem acesso aos vínculos da API.
+- Observação para revisão posterior com o responsável: existe vínculo antigo de uma corrida do fim do dia em outra data da agenda; não foi reatribuído automaticamente nesta etapa, cujo escopo era agrupar o treino da manhã.
+- Arquivos finais: progress.md, README.md, docs/strava.md, supabase/strava-probe-cast.sql e tests/strava-automation-rls.sql. SQL corretivo testado antes de registrar este commit; não há nova alteração de frontend/servidor após o CI aprovado.
+- Para testar: abrir Meu Strava na versão 2.2.0; as novas corridas serão importadas após chegarem ao Strava. Para agrupar gravações do relógio, marcar as partes → Vincular atividades selecionadas → escolher o treino → conferir distância/tempo/pace → confirmar. O vínculo continua explícito para não misturar treino da manhã com corrida da noite.
+- Pendentes: primeira nova corrida externa pelo webhook; testes simultâneos iPhone/Android/computador, offline e recuperação de senha; Renato posteriormente. Auditoria de Auth/pg_net e limitações documentadas na etapa 19.

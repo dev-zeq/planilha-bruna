@@ -57,6 +57,8 @@ declare accepted boolean;j jsonb;again jsonb;claim_id uuid:='a5000000-0000-4000-
  item jsonb:='{"activity_id":900000001,"name":"Synthetic corrected run","sport_type":"Run","start_date":"2026-11-11T12:00:00Z","local_date":"2026-11-11","distance_m":2000,"moving_seconds":600,"elapsed_seconds":630}';
 begin
  perform public.strava_server_auto_config(999999);
+ if not public.strava_server_probe('a1000000-0000-4000-8000-000000000001') then raise exception 'FAIL live probe enqueue';end if;
+ delete from training_private.strava_events where user_id='a1000000-0000-4000-8000-000000000001';
  accepted:=public.strava_server_enqueue(999999,900000001,900000001,'activity','update',t,repeat('1',64));if not accepted then raise exception 'FAIL enqueue';end if;
  accepted:=public.strava_server_enqueue(999999,900000001,900000001,'activity','update',t,repeat('1',64));if accepted then raise exception 'FAIL event duplicate';end if;
  begin perform public.strava_server_enqueue(888888,900000001,900000001,'activity','update',t,repeat('0',64));raise exception 'FAIL wrong subscription';exception when raise_exception then if sqlerrm<>'Assinatura inválida' then raise;end if;end;

@@ -4,7 +4,7 @@ PWA estático em https://treinos.paceplus.app, GitHub Pages, backend exclusivo S
 
 ## Acesso
 
-Versão 2.0.1 publicada em 11/11/2026. SMTP Resend configurado no projeto dedicado, usando domínio verificado paceplus.app e remetente treinos@paceplus.app. Credencial exclusiva limitada a envio, guardada somente na configuração protegida do Supabase.
+Versão 2.2.0 publicada em 11/11/2026, com Strava individual, importação automática e agrupamento de gravações por treino. SMTP Resend configurado no projeto dedicado, usando domínio verificado paceplus.app e remetente treinos@paceplus.app. Credencial exclusiva limitada a envio, guardada somente na configuração protegida do Supabase.
 
 1. Os três convites individuais já foram enviados e constam como Delivered no Resend. Procure “You've been invited”, inclusive na pasta de spam.
 2. Abra o convite do respectivo e-mail. O aplicativo abrirá **Definir nova senha**. Escolha e salve uma senha com pelo menos oito caracteres. Não compartilhe senhas no chat.
@@ -45,9 +45,9 @@ A mesma sessão legada tem a mesma identidade nos dois aparelhos. Resultado lega
 - Não guardar dispositivos compartilhados com sessão aberta: a sessão e dados offline usam armazenamento do navegador.
 - Atualização automática usa polling de 20 s e eventos de foco/conexão. Não depende de habilitar Realtime no projeto.
 
-## Strava posterior
+## Strava individual
 
-Usar OAuth individual, para Ezequiel (Zepp/Amazfit → Strava), Bruna (Garmin → Strava) e Renato. Tokens de acesso/refresh e segredo OAuth ficam em schema privado/segredos de uma Edge Function. O servidor valida usuário e associação, vincula atividades por atleta e pede confirmação de correspondência quando houver dúvida. `strava_activity_id` já existe nos resultados; nenhum token é gravado nessa tabela. Não foram copiados segredos ou funções do Pace Plus.
+OAuth individual validado para Ezequiel (Zepp/Amazfit → Strava) e Bruna (Garmin → Strava); Renato posteriormente. Tokens de acesso/refresh ficam cifrados no Vault; Client Secret somente nos secrets do servidor. Atividades e vínculos recebidos da API são privados por atleta. A relação training_strava_result_activities permite várias gravações em um resultado e impede dupla contagem. Nenhum segredo do Pace Plus foi copiado. Veja docs/strava.md e progress.md.
 
 ## Desenvolvimento e validação
 
@@ -61,6 +61,6 @@ CI em `.github/workflows/tests.yml`. Publicação permanece por main no GitHub P
 
 ### Strava automático e gravações separadas — versão 2.2.0
 
-Depois da ativação pelo responsável, corridas novas/alterações no Strava serão recebidas pelo servidor, mesmo com o Treinos fechado. Aguarde o relógio/Zepp/Garmin terminar de enviar ao Strava. O processamento pode levar alguns minutos e depende da disponibilidade/limites do Strava; o botão de sincronização manual continua disponível.
+Sincronização automática ativada pelo responsável: corridas novas/alterações no Strava serão recebidas pelo servidor, mesmo com o Treinos fechado. Aguarde o relógio/Zepp/Garmin terminar de enviar ao Strava. O processamento pode levar alguns minutos e depende da disponibilidade/limites do Strava; o botão de sincronização manual continua disponível.
 
 Se o relógio gravou aquecimento, treino principal e desaquecimento separadamente, marque todas as partes em **Meu Strava**, toque em **Vincular atividades selecionadas**, confira os totais e confirme o treino da agenda. O resultado reúne distância e tempo em movimento, com pace calculado pelos totais. Não há agrupamento automático de sessões diferentes nem conclusão dos outros atletas.

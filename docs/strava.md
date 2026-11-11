@@ -1,6 +1,6 @@
 # Strava — integração individual
 
-Estado em 11/11/2026: aplicativo cadastrado; capacidade confirmada de 10 atletas. OAuth, sincronização manual e interface implementados no PR #2. Função strava v1 publicada no projeto Treinos; credenciais salvas no servidor com autorização explícita do responsável. PR #2 integrado à main; publicação concluída; OAuth, sincronização repetida sem duplicação e vínculo individual da Bruna validados em produção. Ezequiel também validado com conexão própria e sincronização repetida. Nenhum token ou segredo foi copiado do Pace Plus.
+Estado em 11/11/2026: versão 2.2.0 publicada; Ezequiel e Bruna conectados individualmente. Webhook oficial ativo e fila/Cron/API verificados em produção com uma releitura real, sem duplicação. Agrupamento confirmado de aquecimento, principal e desaquecimento validado no treino real do responsável. Capacidade de 10 atletas; Renato será conectado posteriormente. Credenciais exclusivamente no servidor/Vault; nenhum token ou segredo do Pace Plus foi utilizado.
 
 ## Cadastro preparado
 
@@ -43,8 +43,8 @@ O painel deste aplicativo confirmou capacidade para 10 atletas. A conexão inici
 
 - Testes de servidor, RLS real em transação revertida, Deno e interface no CI passaram no commit 6e4fb3fefaab8acbd0abbca2e2cdaa18c3110a2b. Testes adicionais do painel privado serão validados no próximo commit.
 - Sincronização manual: corridas dos últimos 30 dias, até 300 atividades consultadas. Cada vínculo exige confirmação e compara a versão do resultado.
-- Revogação detectada ao usar a API remove dados importados; saída do último grupo também limpa dados e Vault. Webhooks para revogação/alteração remota imediata ainda pendentes: esta é uma versão inicial em validação, não uma integração automática completa.
-- Casal validado em produção: Bruna 43 atividades e Ezequiel 36, sem duplicação ao repetir; um vínculo individual persistente em cada conta e isolamento com UUIDs reais. Credenciais configuradas exclusivamente no servidor. Pendentes: conferência nos celulares e webhooks. Renato depois, conforme instrução do responsável.
+- Revogação detectada ao usar a API remove dados importados; saída do último grupo também limpa dados e Vault. Webhooks de criação/alteração/exclusão/revogação implementados e assinatura ativada; aguarda-se a próxima corrida nova externa para observar esse evento real.
+- Casal validado em produção: Bruna 43 atividades e Ezequiel 36, sem duplicação ao repetir; um vínculo individual persistente em cada conta e isolamento com UUIDs reais. Credenciais configuradas exclusivamente no servidor. Pendentes: conferência nos celulares e primeira nova corrida pelo webhook externo. Renato depois, conforme instrução do responsável.
 
 ## Ativação pelo responsável
 
@@ -55,9 +55,9 @@ O painel deste aplicativo confirmou capacidade para 10 atletas. A conexão inici
 5. Sincronizar, repetir e conferir ausência de duplicações. Vincular uma corrida ao próprio treino; conferir que os outros atletas não foram concluídos e não veem os dados da API.
 6. Testar em celular e computador. Registrar o resultado real em progress.md; não marcar concluído só pelo CI simulado.
 
-Credenciais salvas em 11/11/2026 após autorização explícita do responsável. O responsável ainda precisa confirmar as permissões de leitura no fluxo OAuth de cada atleta, com contas correspondentes no Treinos e no Strava.
+Credenciais salvas em 11/11/2026 após autorização explícita do responsável. O responsável confirmou as permissões de Ezequiel e Bruna com contas correspondentes. Renato fará sua própria autorização posteriormente.
 
-## Versão 2.2.0 — automação e atividades separadas (em validação)
+## Versão 2.2.0 — automação e atividades separadas (publicada)
 
 O PR #3 adiciona webhook oficial para os atletas já conectados. Novas corridas e alterações chegam a uma fila privada persistente. O callback confirma rapidamente; o processamento consulta o Strava com os tokens do próprio atleta. Falhas/limites voltam à fila; um Cron verifica trabalho pendente a cada minuto, sem chamadas HTTP quando a fila está vazia. Exclusões e revogações removem dados da API, preservando a agenda e resultados manuais. Eventos de uma autorização antiga não podem apagar uma conexão nova.
 
@@ -67,4 +67,4 @@ Ativar uma vez na conta Ezequiel em **Meu Strava → Ativar sincronização auto
 
 Vínculos anteriores de uma atividade são preservados. O servidor antigo e a PWA 2.1.0 continuam compatíveis durante a atualização. Correções/exclusões de componentes atualizam o total já vinculado; métricas ajustadas manualmente pelo usuário não são sobrescritas silenciosamente. Dados e vínculos da API permanecem privados por atleta.
 
-Validação: testes de servidor/webhook, SQL com fixtures revertidas e CI com seleção de três gravações e resultado único. A confirmação real da assinatura e do processamento em segundo plano é registrada em progress.md após a ativação; receber a próxima corrida real do Strava é um teste adicional distinto.
+Validação: testes de servidor/webhook, SQL com fixtures revertidas e CI com seleção de três gravações e resultado único. Assinatura oficial e processamento real pela fila/Cron confirmados na etapa 20 de progress.md; receber a próxima corrida real do Strava é um teste adicional distinto.
