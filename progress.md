@@ -22,13 +22,20 @@ Atualizado em: 2026-11-11
 - [x] Quatro conjuntos de dados confirmados: grupos de treino, membros, treinos planejados e resultados individuais.
 - [x] Regras de acesso/RLS ativadas nas quatro tabelas, segundo verificação anterior.
 
-## Ponto atual
+## Ponto atual — 11/11/2026
 
-**Etapa seguinte: conectar o site/PWA ao Supabase e implementar autenticação das três contas (Ezequiel, Bruna e Renato Cirino).**
+**Implementação real concluída na branch `feat/supabase-shared-training`, em validação antes de produção.**
 
-A experiência instalada foi testada, mas **a sincronização entre celulares não está pronta**. A planilha ainda utilizava armazenamento local na última verificação. Não assumir que treinos registrados em um aparelho aparecem no outro.
+- PR draft: https://github.com/dev-zeq/planilha-bruna/pull/1.
+- Código verificado: `511af6bfe06ef889117371fa1e93e21b2b66d268` (com commits anteriores de banco/UI/testes).
+- CI final do código passou nas duas execuções (push e PR): https://github.com/dev-zeq/planilha-bruna/actions/runs/43061633392 e https://github.com/dev-zeq/planilha-bruna/actions/runs/43061623289.
+- Banco dedicado atualizado e três e-mails autorizados, sem criação de senhas ou envio de mensagens.
+- **Bloqueio:** escolher/configurar SMTP para confirmar os e-mails e recuperar senhas dos três atletas. O SMTP padrão do Supabase não atende usuários externos à equipe administrativa. Confirmação continua habilitada.
+- **main ainda não alterada:** o domínio continua com a versão local anterior. Não afirmar que a nova sincronização já está disponível na raiz publicada.
+- **Faltam testes reais:** cadastro, entrega de e-mail, login e recuperação nas três contas; instalação/atualização offline em Safari/iPhone e Android; importação confirmada dos dados dos aparelhos.
+- **Próximo passo:** configurar SMTP com o usuário, validar os três acessos, promover/integrar PR e testar a versão publicada. Guia detalhado em README.md desta branch.
 
-## Próximas etapas (ordem sugerida)
+## Checklist original (histórico; execução detalhada abaixo)
 
 - [ ] Inspecionar a versão atual do site e identificar o formato/chaves de armazenamento local dos treinos.
 - [ ] Preparar **backup e importação idempotente** dos treinos locais antes de alterar a persistência; evitar perda e duplicação.
@@ -131,3 +138,13 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Arquivos desta etapa: `app.js`, `index.html`, `README.md`, `.gitignore`, `progress.md`.
 - Bloqueio de produção: SMTP próprio ainda não configurado. PR permanece draft até completar entrega de e-mail e validar contas reais; main/domínio publicado continuam com a versão anterior. Nenhum dado local apagado.
 - Próximo passo: conferir CI final e configurar SMTP com o serviço escolhido pelo usuário; então validar o cadastro/login/recuperação dos três, promover PR e conferir PWA nos aparelhos.
+
+
+### Encerramento desta sessão — 11/11/2026
+
+- Correção `511af6b` validada em CI push e PR, ambos verdes. O aviso do PWA não sobrescreve mais o estado da sincronização.
+- Testes executados: sete unitários; sintaxe JS; disponibilidade/sintaxe do SDK Supabase 2.81.1; UI Chrome com três contas simuladas (CRUD compartilhado, resultado próprio, XSS, erro de rede/fila/reenvio, conflito e exclusão); viewport mobile sem overflow; SQL/RLS real com três identidades, outsider, anônimo, revogação e autorização por e-mail confirmado.
+- Evidências UI em artifacts dos runs de CI. Capturas foram geradas automaticamente; inspeção visual humana de Safari/Android ainda pendente. Não confundir contas simuladas de CI com os três cadastros reais, que não foram criados.
+- Estado remoto revisado: dois novos registros de migração, três autorizações privadas, zero usuários reais, zero treinos migrados. Nenhum dado do navegador acessado/apagado por esta execução.
+- Commits relevantes: `4e0c481` banco; `54e19a4` UI; `17ad0e6` harness; `511af6b` correções de sincronização. Esta atualização de documentação está em commit posterior, sem alteração do código testado.
+- Nenhuma dependência de credenciais de outro projeto. SMTP a configurar exclusivamente neste projeto. Não adicionar os atletas à organização Supabase como administradores.
