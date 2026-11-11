@@ -45,3 +45,14 @@ O painel deste aplicativo confirmou capacidade para 10 atletas. A conexão inici
 - Sincronização manual: corridas dos últimos 30 dias, até 300 atividades consultadas. Cada vínculo exige confirmação e compara a versão do resultado.
 - Revogação detectada ao usar a API remove dados importados; saída do último grupo também limpa dados e Vault. Webhooks para revogação/alteração remota imediata ainda pendentes: esta é uma versão inicial em validação, não uma integração automática completa.
 - Pendentes: credenciais de servidor, OAuth real de Bruna/Ezequiel, repetição da sincronização e conferência nos celulares. Renato depois, conforme instrução do responsável.
+
+## Ativação pelo responsável
+
+1. No projeto hzcqlygvzxxnvpywzppp → Edge Functions → Secrets, salvar STRAVA_CLIENT_ID=296243 e STRAVA_CLIENT_SECRET do aplicativo Treinos Pace Plus. Nunca colar o segredo em chat, repositório, frontend ou SQL público.
+2. Conferir que a função strava responde status configurado para membro autenticado. O endpoint usa validação interna de JWT; sem usuário válido não deve retornar dados.
+3. Publicar a interface validada pelo PR #2. Abrir Treinos → Meu Strava. Antes de conectar, conferir a conta do aplicativo e a conta do Strava: ambas precisam ser da mesma pessoa.
+4. Bruna autoriza Bruna; Ezequiel autoriza Ezequiel. É preciso trocar a sessão Strava quando a outra pessoa for conectar. Não reutilizar tokens de uma conta para outra.
+5. Sincronizar, repetir e conferir ausência de duplicações. Vincular uma corrida ao próprio treino; conferir que os outros atletas não foram concluídos e não veem os dados da API.
+6. Testar em celular e computador. Registrar o resultado real em progress.md; não marcar concluído só pelo CI simulado.
+
+As credenciais ainda não foram salvas. É necessária autorização específica do responsável para transferir o Client Secret do Strava para os secrets deste projeto Supabase. O responsável também confirma as permissões de leitura no fluxo OAuth de cada atleta.

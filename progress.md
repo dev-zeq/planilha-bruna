@@ -307,3 +307,7 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Pendências: credenciais Strava no servidor, publicação da interface, OAuth real de Bruna/Ezequiel, validação da sincronização/vínculo/repetição e celulares. Webhooks permanecem pendentes; não anunciar sincronização automática completa.
 
 - CI do commit 0ca546e: cenários funcionais Strava passaram e lockfile congelado validou. Verificação de largura falhou porque o relatório técnico do teste usa um pre sem quebra; corrigido o próprio relatório para quebrar linhas, mantendo a detecção de overflow na aplicação e acrescentando diagnóstico de elementos. Revalidação pendente.
+
+- Correção do relatório validada: execução 43076316511 aprovada no commit 0f939158ab47d02408b44ef0832f1c15f8de2f91, incluindo Deno com --frozen, core/servidor, painel privado Strava, sincronização/vínculo simulados, troca A/B/C, fila/conflito e largura móvel.
+- Consulta final: 8 sessões ativas, 3 resultados reais, zero conexões/atividades Strava reais. Dados existentes preservados.
+- Próxima intervenção necessária: autorização específica para salvar o Client Secret do aplicativo Strava 296243 nos secrets do projeto Treinos. Formulário de secrets e cadastro Strava preparados no navegador; nenhum segredo lido/copiado. Após isso publicar a interface e testar OAuth real por atleta.
