@@ -22,13 +22,20 @@ Atualizado em: 2026-11-11
 - [x] Quatro conjuntos de dados confirmados: grupos de treino, membros, treinos planejados e resultados individuais.
 - [x] Regras de acesso/RLS ativadas nas quatro tabelas, segundo verificação anterior.
 
-## Ponto atual
+## Ponto atual — 11/11/2026
 
-**Etapa seguinte: conectar o site/PWA ao Supabase e implementar autenticação das três contas (Ezequiel, Bruna e Renato Cirino).**
+**Implementação real concluída na branch `feat/supabase-shared-training`, em validação antes de produção.**
 
-A experiência instalada foi testada, mas **a sincronização entre celulares não está pronta**. A planilha ainda utilizava armazenamento local na última verificação. Não assumir que treinos registrados em um aparelho aparecem no outro.
+- PR draft: https://github.com/dev-zeq/planilha-bruna/pull/1.
+- Código verificado: `511af6bfe06ef889117371fa1e93e21b2b66d268` (com commits anteriores de banco/UI/testes).
+- CI final do código passou nas duas execuções (push e PR): https://github.com/dev-zeq/planilha-bruna/actions/runs/43061633392 e https://github.com/dev-zeq/planilha-bruna/actions/runs/43061623289.
+- Banco dedicado atualizado e três e-mails autorizados, sem criação de senhas ou envio de mensagens.
+- **Bloqueio:** escolher/configurar SMTP para confirmar os e-mails e recuperar senhas dos três atletas. O SMTP padrão do Supabase não atende usuários externos à equipe administrativa. Confirmação continua habilitada.
+- **main ainda não alterada:** o domínio continua com a versão local anterior. Não afirmar que a nova sincronização já está disponível na raiz publicada.
+- **Faltam testes reais:** cadastro, entrega de e-mail, login e recuperação nas três contas; instalação/atualização offline em Safari/iPhone e Android; importação confirmada dos dados dos aparelhos.
+- **Próximo passo:** configurar SMTP com o usuário, validar os três acessos, promover/integrar PR e testar a versão publicada. Guia detalhado em README.md desta branch.
 
-## Próximas etapas (ordem sugerida)
+## Checklist original (histórico; execução detalhada abaixo)
 
 - [ ] Inspecionar a versão atual do site e identificar o formato/chaves de armazenamento local dos treinos.
 - [ ] Preparar **backup e importação idempotente** dos treinos locais antes de alterar a persistência; evitar perda e duplicação.
@@ -72,3 +79,130 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Supabase: https://supabase.com/dashboard/project/hzcqlygvzxxnvpywzppp
 
 > Este documento resume informações confirmadas em conversas anteriores. Para detalhes de banco e implementação, conferir novamente código e configurações antes de mudanças.
+
+
+
+## 2026-11-11 — Etapa 1: inspeção e backend real
+
+- Branch: `feat/supabase-shared-training`, baseada na main `6d44e42`.
+- Inspecionados todos os arquivos da main e as quatro tabelas/políticas reais. Banco sem usuários, membros ou treinos.
+- Aplicada migração remota `shared_training_sync_and_authorization`, somente em `hzcqlygvzxxnvpywzppp`. Fonte: `supabase/shared-training.sql`.
+- Criado grupo dedicado; vínculo exige e-mail confirmado autorizado na tabela privada. Nenhum e-mail autorizado por inferência.
+- Corrigidas políticas para leitura dos integrantes, isolamento por grupo e resultados com escrita exclusiva do próprio atleta, inclusive após revogação.
+- Adicionados destinatários por UUID (vazio = grupo inteiro), versionamento, exclusão lógica e RPC transacional com recibos idempotentes. Pace calculado no banco.
+- `tests/rls.sql` executado no projeto real com três identidades de um grupo e uma de outro, papéis Postgres authenticated/anon, JWT subject distinto. Assertions passaram; fixtures em transação revertida. Não equivale a login real nos celulares.
+- Validados: leitura compartilhada; edição por outro membro; conclusão individual; tentativa de adulterar resultado alheio; bloqueio de grupo externo; revogação; anônimo; repetição idempotente e conflito de versão.
+- Advisor de segurança: sem WARN/ERROR. INFO esperado: autorizações privadas com RLS e nenhuma policy, acesso direto revogado.
+- Ambiente local sem DNS para GitHub/npm e sem CLI Supabase instalada: fontes obtidas e commits enviados pelo conector; SQL remoto aplicado por MCP e fonte sem nome de migração CLI inventado.
+- Arquivos: `supabase/shared-training.sql`, `tests/rls.sql`, `progress.md`.
+- Commit: etapa registrada no commit que contém esta seção; SHA será registrado na próxima etapa.
+- Pendente: e-mails exatos dos três atletas, configuração de URLs do Auth, login/recuperação reais, UI e sincronização.
+- Próximo passo: implementar interface e testes de importação/fila; depois autorizar os e-mails fornecidos pelo usuário.
+
+
+## 2026-11-11 — Etapa 2: aplicação, autorizações e testes
+
+- Commit etapa 1: https://github.com/dev-zeq/planilha-bruna/commit/4e0c481b0cbec3b717e0f781adac520fa2536dc6.
+- Implementados `app.js`, `core.mjs`, `styles.css` e nova interface `index.html`: login/cadastro/recuperação, agenda semanal compartilhada, filtros dinâmicos por integrante, planejamento e resultado próprio separados, pace calculado e botão de conclusão.
+- Fila persistente por conta com UUIDs, recibos no servidor, trava entre abas, comparação de versões, conflito visível, exportação e descarte explícito. Leitura paginada, atualização automática a cada 20 s e ao retomar foco/reconectar.
+- Migração dos dados `ez_bruna_treinos_v1` por confirmação, UUID determinístico por grupo/ID legado, sem apagar o localStorage. “Ambos” mantém Ezequiel/Bruna, sem incluir Renato por inferência; resultados só para a conta que confirma. Reimportação não sobrescreve resultados existentes.
+- Service worker com shell coerente por versão, SDK fixado em 2.81.1, ativação de atualização por botão; não armazena Auth/REST no Cache API. Manifesto, domínio e instalação mantidos.
+- E-mails fornecidos pelo usuário autorizados na tabela privada; não registrados no repositório público. Contas e senhas ainda não criadas.
+- URLs reais do Auth configuradas no dashboard: Site URL e único redirect `https://treinos.paceplus.app/`. Confirm email ativado; anonymous sign-ins desativado. Nenhuma alteração no Pace Plus principal.
+- Aplicada segunda migração remota `training_advisor_indexes_and_input_limits`: índices redundantes removidos, FKs indexadas, limites de texto no banco. Fonte `supabase/hardening-followup.sql`.
+- Testes locais: 7 casos unitários em `tests/core.test.mjs` passaram (tempo/pace, validação de backup, IDs estáveis, resultados individuais, projeção e versões, duplicação/exclusão, escape de HTML). `node --check` passou nos três módulos da aplicação.
+- `tests/rls.sql` ampliado e executado com sucesso: convite exige confirmação de e-mail, reivindicação repetida não duplica membro, tabela de autorizações não é legível pelo usuário. Fixtures revertidas. Verificação posterior: zero usuários/treinos e três autorizações reais.
+- Criados testes de navegador em `tests/browser-*` e mock isolado `tests/mock-supabase.js`; aguardando execução no GitHub Actions. Não considerar esses cenários verificados ainda.
+- Ambiente local bloqueia abertura de sockets de servidor; teste do navegador será executado em CI. Isso não altera o servidor publicado.
+- Pendente: executar CI, revisar UI publicada, validar serviço de entrega de e-mail (SMTP) e os três logins reais; testes offline reais em iPhone/Android e recuperação por e-mail.
+- Próximo passo: PR e verificações automáticas, corrigir falhas e publicar após validação; depois testes assistidos das três contas.
+
+
+### Etapa 2 — ajuste de testes e bloqueio de e-mail
+
+- Commit de implementação: `54e19a4df63e44df6344ca069e67159a6455f369`; PR https://github.com/dev-zeq/planilha-bruna/pull/1.
+- CI inicial https://github.com/dev-zeq/planilha-bruna/actions/runs/43060800775: 7 unitários e sintaxe passaram; navegador parou aguardando a trava nativa com relógio virtual do Chrome. Trocado o harness de `--dump-dom --virtual-time-budget` por sessão CDP isolada no runner com relógio real, capturas mobile/desktop e diagnóstico do status visível. Reexecução pendente.
+- O commit `3cfcc2a` não teve diff devido a uma falha de caminho na edição local; a alteração do harness está no commit seguinte. Histórico preservado.
+- Confirmado no dashboard: SMTP customizado desativado. O provedor padrão do Supabase só entrega para membros da organização e tem limite baixo (docs oficiais: https://supabase.com/docs/guides/auth/auth-smtp). E-mails autorizados para o aplicativo não equivalem a membros administrativos da organização. Não conceder acesso administrativo aos atletas para contornar isso.
+- Bloqueio real para validar os três cadastros/recuperação: configurar um provedor SMTP do usuário. Confirmação de e-mail segue ativada. Não foram enviadas mensagens nem criadas senhas.
+
+
+## 2026-11-11 — Etapa 3: CI, revisão e documentação de uso
+
+- Harness corrigido em `17ad0e6dc20288e7a7134e0bf24f12b47141fa48`.
+- CI https://github.com/dev-zeq/planilha-bruna/actions/runs/43061302109 passou: sete unitários, sintaxe, download/sintaxe do SDK fixado e navegador Chrome com três contas simuladas; CRUD compartilhado, resultado individual, escape HTML, falha de rede, reenvio e conflito. Capturas mobile 390×844 e desktop geradas como artifacts, sem overflow mobile.
+- Execução irmã https://github.com/dev-zeq/planilha-bruna/actions/runs/43061291493 identificou corrida de mensagens: falha deliberada de registro do SW no mock sobrescrevia aviso de sincronização. Corrigido produto para usar aviso de PWA separado, preservando o estado da sincronização. Nova execução pendente.
+- Revisão adicional: botão de reenvio permite repetir operação que havia sido bloqueada por erro recuperável; troca de identidade espera a sincronização anterior terminar antes de carregar a nova; mensagem de erro de entrega de confirmação ficou clara.
+- README reescrito com instruções de teste nos celulares, migração, restauração v2 assistida, modelo de segurança, polling, atualização PWA e arquitetura futura Strava.
+- Advisor final: sem WARN/ERROR de segurança ou performance. INFO sobre autorizações privadas sem policy é intencional; índices sem uso esperados em banco vazio. FK de grupo das autorizações (três registros) ainda sem índice, sem impacto para este volume.
+- Arquivos desta etapa: `app.js`, `index.html`, `README.md`, `.gitignore`, `progress.md`.
+- Bloqueio de produção: SMTP próprio ainda não configurado. PR permanece draft até completar entrega de e-mail e validar contas reais; main/domínio publicado continuam com a versão anterior. Nenhum dado local apagado.
+- Próximo passo: conferir CI final e configurar SMTP com o serviço escolhido pelo usuário; então validar o cadastro/login/recuperação dos três, promover PR e conferir PWA nos aparelhos.
+
+
+### Encerramento desta sessão — 11/11/2026
+
+- Correção `511af6b` validada em CI push e PR, ambos verdes. O aviso do PWA não sobrescreve mais o estado da sincronização.
+- Testes executados: sete unitários; sintaxe JS; disponibilidade/sintaxe do SDK Supabase 2.81.1; UI Chrome com três contas simuladas (CRUD compartilhado, resultado próprio, XSS, erro de rede/fila/reenvio, conflito e exclusão); viewport mobile sem overflow; SQL/RLS real com três identidades, outsider, anônimo, revogação e autorização por e-mail confirmado.
+- Evidências UI em artifacts dos runs de CI. Capturas foram geradas automaticamente; inspeção visual humana de Safari/Android ainda pendente. Não confundir contas simuladas de CI com os três cadastros reais, que não foram criados.
+- Estado remoto revisado: dois novos registros de migração, três autorizações privadas, zero usuários reais, zero treinos migrados. Nenhum dado do navegador acessado/apagado por esta execução.
+- Commits relevantes: `4e0c481` banco; `54e19a4` UI; `17ad0e6` harness; `511af6b` correções de sincronização. Esta atualização de documentação está em commit posterior, sem alteração do código testado.
+- Nenhuma dependência de credenciais de outro projeto. SMTP a configurar exclusivamente neste projeto. Não adicionar os atletas à organização Supabase como administradores.
+
+
+## 2026-11-11 — Etapa 4: domínio de e-mail no Resend
+
+- Usuário confirmou conta Resend existente e autorizou usar paceplus.app.
+- Domínio paceplus.app adicionado de fato no Resend (região São Paulo); recebimento de e-mails desativado, somente envio preparado. Não alterado o domínio já existente na conta.
+- Cadastro atual: https://resend.com/domains/add/654d6921-8fdb-4c41-a77b-6d860211467b.
+- Verificação DNS ainda não concluída. O Resend apresentou estes registros, a confirmar novamente na interface antes de inserir:
+  - TXT resend._domainkey: valor DKIM público disponível no cadastro do domínio.
+  - CNAME rsend → rsend-sae1.forge.rmta.net.
+  - CNAME send → send.forge.rmta.net.
+- Resend aponta Porkbun como provedor DNS. Aberta a página do domínio no Porkbun; bloqueada por login do usuário. Nenhum registro DNS foi modificado.
+- Formulário SMTP do projeto planilha-treinos preparado, mas NÃO salvo: remetente treinos@paceplus.app, nome Treinos | Pace Plus, smtp.resend.com, porta 465, usuário resend. Senha/chave ainda não configurada; serviço customizado não ativado no servidor.
+- Documentação oficial conferida: https://resend.com/docs/send-with-supabase-smtp.
+- Nenhuma chave Resend criada, copiada, publicada ou reutilizada de outro projeto. Antes de configurar, criar credencial exclusiva com permissão mínima de envio para este domínio.
+- Pendência imediata: usuário entrar no Porkbun na aba aberta e avisar. Depois adicionar/verificar os registros DNS, configurar a credencial SMTP diretamente no painel, salvar e validar entrega/cadastro/login.
+- main e PR continuam no estado anterior: implantação nova ainda pendente. Esta etapa altera apenas documentação em progress.md.
+
+
+## 2026-11-11 — Etapa 5: registros DNS aplicados
+
+- Após login do usuário, inspecionados os 12 registros DNS existentes de paceplus.app no Porkbun.
+- Adicionados exatamente três registros novos, TTL 600, conferidos na listagem final de 15 registros:
+  - TXT resend._domainkey.paceplus.app, chave DKIM pública apresentada pelo Resend.
+  - CNAME rsend.paceplus.app → rsend-sae1.forge.rmta.net.
+  - CNAME send.paceplus.app → send.forge.rmta.net.
+- Preservados os registros A/CNAME do site, api, admin, www e treinos; também MX, SPF, DKIM e DMARC já existentes. Nameservers não alterados.
+- Clicado “I've already added the records” no Resend. Evidência posterior: evento “DNS verified”; domínio global ainda Pending / Verifying domain; CNAME send Verified, DKIM e rsend ainda Pending. Não considerar envio pronto até status global Verified.
+- Conferida a criação de chave de API: o formulário permite Sending access; a lista de escopo ainda não mostra paceplus.app enquanto a verificação está pendente. Formulário cancelado; nenhuma chave criada, nenhum segredo lido.
+- Próximo passo concreto: após liberação, criar Treinos-Supabase-SMTP com Sending access restrito a paceplus.app e registrar apenas no SMTP do Supabase planilha-treinos. A criação de credencial permanente no navegador exige confirmação no momento da ação; aguardando confirmação do usuário.
+- SMTP continua preparado e não salvo; nenhum teste de e-mail enviado. Sem alterações de código ou de esquema nesta etapa. progress.md atualizado no commit desta seção.
+
+
+## 2026-11-11 — Etapa 6: Resend e SMTP ativos
+
+- Domínio paceplus.app global Verified no Resend; DKIM e os dois CNAMEs Verified. Região São Paulo. Recebimento continua desativado.
+- Após confirmação explícita do usuário, criada chave exclusiva Treinos-Supabase-SMTP com Sending access restrito a paceplus.app. Nenhuma chave preexistente reutilizada. Segredo não incluído em arquivos, commits, mensagens ou documentação.
+- Chave transferida pela interface entre os painéis e salva no SMTP exclusivamente de hzcqlygvzxxnvpywzppp: treinos@paceplus.app, Treinos | Pace Plus, smtp.resend.com:465, usuário resend. Toast confirmado: Successfully updated settings; senha armazenada oculta.
+- O primeiro método de copiar pela acessibilidade não integrou a área de transferência virtual; resolvido pelo botão Copy via automação DOM documentada. Nenhum segredo impresso.
+- Ajustado o fluxo de convite: capturar type=invite/recovery antes de inicializar o SDK e abrir definição de senha antes de reivindicar o grupo. Incluído teste de navegador com hash consumido pelo SDK simulado.
+- Arquivos: app.js, index.html, sw.js, package.json, tests/mock-supabase.js, tests/browser-scenarios.js, tests/browser-smoke.mjs, progress.md.
+- Versão do shell/app 2.0.1. Unitários (7) e sintaxe passaram localmente. CI do fluxo de convite ainda a executar.
+- Próximo passo: validar CI, publicar a versão, enviar convites individuais e verificar entrega. Cada atleta definirá sua própria senha; login real nos três aparelhos continua pendente.
+
+
+
+
+
+### Etapa 6 — preservação do fluxo de senha
+
+- Revisão do PWA: o primeiro service worker não força recarregamento; troca de controlador também não recarrega enquanto o usuário define a senha. Isso evita perder o contexto de convite/recuperação depois que o SDK consome o hash.
+- Arquivo app.js. A suíte de convite está no CI da etapa; sem novos segredos ou mudanças de banco.
+
+
+### Etapa 6 — teste de conflito determinístico
+
+- CI do convite: execução push 43065924272 passou; PR 43065935346 expôs teste instável, não sobrescrita no produto. A UI ordena por UUID, mas o fixture alterava sempre a primeira sessão criada; com UUIDs aleatórios, às vezes editava outro treino.
+- Teste corrigido para selecionar o ID exato nas ações de conflito/exclusão. Mantida a comparação de versões e ampliada a tolerância de espera de UI para runners mais lentos. Nova execução pendente antes da publicação.
