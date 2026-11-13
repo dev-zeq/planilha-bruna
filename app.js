@@ -1,5 +1,5 @@
 import {setupStrava,takeStravaReturn} from './strava-client.mjs';
-import {LEGACY_KEY, PERIODS, escapeHTML as esc, isoLocal, monday, durationSeconds, durationText, paceText, numberOrNull, validateLegacy, legacyOperations, legacyUUID, projectSnapshot, lockWithTakeover, sessionState, SESSION_STATES} from './core.mjs';
+import {LEGACY_KEY, PERIODS, escapeHTML as esc, isoLocal, monday, durationSeconds, durationText, paceText, numberOrNull, validateLegacy, legacyOperations, legacyUUID, projectSnapshot, lockWithTakeover, sessionState, SESSION_STATES, parsePlan, planOperations} from './core.mjs';
 
 const stravaReturn=takeStravaReturn();
 const $=id=>document.getElementById(id);
@@ -266,7 +266,25 @@ async function logout(){
 $('logout').onclick=$('accessLogout').onclick=()=>guarded(logout);
 $('checkAccess').onclick=()=>guarded(async()=>{group=null;await handleSession((await client.auth.getSession()).data.session);},$('checkAccess'));
 $('refresh').onclick=()=>guarded(()=>refresh(true),$('refresh'));
-$('new').onclick=()=>openSession();$('prev').onclick=()=>{week.setDate(week.getDate()-7);render();};$('next').onclick=()=>{week.setDate(week.getDate()+7);render();};$('today').onclick=()=>{week=monday();scrollToToday=true;render();};
+$('new').onclick=()=>openSession();
+let planItems=[];
+const planShow=step=>{$('planStep1').hidden=step!==1;$('planStep2').hidden=step!==2;};
+$('pastePlan').onclick=()=>{$('planText').value='';$('planError').textContent='';planItems=[];planShow(1);$('planDialog').showModal();};
+$('planReview').onclick=()=>{try{
+ const {items,skipped}=parsePlan($('planText').value,view().sessions);
+ if(!items.length)throw Error('Todos os treinos do plano já constam na agenda. Nada a criar.');
+ planItems=items;$('planError').textContent='';
+ $('planSummary').textContent=`${items.length} treino(s) a criar${skipped.length?` · ${skipped.length} já existente(s) na agenda, ignorado(s)`:''}.`;
+ $('planList').innerHTML=items.map(x=>`<li><strong>${esc(x.title)}</strong><small>${esc(x.training_date.split('-').reverse().join('/'))} · ${esc(x.period)}${x.planned_km==null?'':' · '+esc(fmtKm(x.planned_km))+' km'}</small>${x.description?`<small>${esc(x.description)}</small>`:''}</li>`).join('');
+ $('planTargets').innerHTML=members.map(m=>`<label><input type="checkbox" value="${esc(m.user_id)}" ${m.user_id===viewing?'checked':''}>${esc(m.display_name)}</label>`).join('');
+ planShow(2);
+}catch(e){$('planError').textContent=errorText(e);}};
+$('planBack').onclick=()=>planShow(1);
+$('planForm').onsubmit=e=>{e.preventDefault();void guarded(async()=>{
+ const targets=Array.from($('planTargets').querySelectorAll('input:checked'),x=>x.value);
+ await enqueueMany(planOperations(planItems,group,targets,()=>crypto.randomUUID()));
+ planItems=[];$('planDialog').close();
+},e.submitter);};$('prev').onclick=()=>{week.setDate(week.getDate()-7);render();};$('next').onclick=()=>{week.setDate(week.getDate()+7);render();};$('today').onclick=()=>{week=monday();scrollToToday=true;render();};
 $('filters').onclick=e=>{const b=e.target.closest('[data-filter]');if(b){viewing=b.dataset.filter;render();}};
 $('tabs').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)setTab(b.dataset.tab);};
 $('rankPeriod').onclick=e=>{const b=e.target.closest('[data-rank]');if(b){rankRange=b.dataset.rank;renderRank();}};

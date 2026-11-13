@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {durationSeconds,durationText,paceText,numberOrNull,validateLegacy,legacyUUID,legacyOperations,projectSnapshot,monday,isoLocal,escapeHTML,lockWithTakeover,sessionState,SESSION_STATES} from '../core.mjs';
+import {durationSeconds,durationText,paceText,numberOrNull,validateLegacy,legacyUUID,legacyOperations,projectSnapshot,monday,isoLocal,escapeHTML,lockWithTakeover,sessionState,SESSION_STATES,parsePlan,planOperations} from '../core.mjs';
 const legacy={id:'seed0',date:'2026-11-09',athlete:'Ambos',time:'Manhã',name:'Rodagem',desc:'12 km',status:'done',distance:12};
 const members=[{display_name:'Ezequiel',user_id:'a'},{display_name:'Bruna',user_id:'b'},{display_name:'Renato Cirino',user_id:'c'}];
 test('duration and pace use seconds and carry minutes',()=>{assert.equal(durationSeconds('01:02:03'),3723);assert.equal(durationSeconds(''),null);assert.throws(()=>durationSeconds('00:99:00'));assert.equal(durationText(3723),'01:02:03');assert.equal(paceText(10,2399),'4:00/km');assert.equal(paceText(0,300),'—');assert.throws(()=>numberOrNull(Infinity));assert.throws(()=>numberOrNull(-1));});
@@ -31,4 +31,28 @@ test('card state: result wins, then today, late, and the plan for future days',(
  assert.equal(sessionState({training_date:'2026-11-12',state:'open'},undefined,today),'open');
  assert.equal(sessionState({training_date:'2026-11-10',state:'open'},undefined,today),'late');
  for(const state of ['done','skipped','today','late','open'])assert.ok(SESSION_STATES[state]);assert.equal(SESSION_STATES.planned,'');
+});
+
+test('pasted plan: valid list becomes create operations for the chosen athletes only',()=>{
+ const {items,skipped}=parsePlan('[{"data":"2026-11-13","titulo":" Rodagem leve ","descricao":"solto","km":8},{"data":"2026-11-14","titulo":"Longão","periodo":"Manhã"}]');
+ assert.equal(items.length,2);assert.equal(skipped.length,0);
+ assert.deepEqual(items[0],{training_date:'2026-11-13',period:'Não definido',title:'Rodagem leve',description:'solto',planned_km:8});
+ let n=0;const ops=planOperations(items,'g1',['u1','u2'],()=>'id'+(++n));
+ assert.equal(ops[1].kind,'create');assert.equal(ops[1].version,0);
+ assert.deepEqual(ops[1].data,{id:'id2',group_id:'g1',training_date:'2026-11-14',period:'Manhã',title:'Longão',description:'',planned_km:null,state:'planned',target_user_ids:['u1','u2']});
+ assert.throws(()=>planOperations(items,'g1',[],()=>'x'),/pelo menos um atleta/);
+});
+test('pasted plan: accepts {"treinos":[...]} and skips a repeat of an existing workout',()=>{
+ const {items,skipped}=parsePlan('{"treinos":[{"data":"2026-11-13","titulo":"Rodagem"},{"data":"2026-11-13","titulo":"rodagem"},{"data":"2026-11-14","titulo":"Rodagem"}]}',[]);
+ assert.equal(items.length,2);assert.equal(skipped.length,1);
+ const again=parsePlan('[{"data":"2026-11-13","titulo":"Rodagem"}]',[{training_date:'2026-11-13',title:'Rodagem '}]);
+ assert.equal(again.items.length,0);assert.equal(again.skipped.length,1);
+});
+test('pasted plan: rejects bad input with a clear message and never partially accepts',()=>{
+ const bad=[['nao json',/JSON válido/],['[]',/pelo menos um/],['[1]',/formato inválido/],
+  ['[{"data":"2026-02-30","titulo":"x"}]',/data/],['[{"data":"13/11/2026","titulo":"x"}]',/data/],
+  ['[{"data":"2026-11-13","titulo":""}]',/titulo/],['[{"data":"2026-11-13","titulo":"x","periodo":"Madrugada"}]',/periodo/],
+  ['[{"data":"2026-11-13","titulo":"x","km":-1}]',/Distância/],['[{"data":"2026-11-13","titulo":"x","descricao":5}]',/descricao/]];
+ for(const [text,re] of bad)assert.throws(()=>parsePlan(text),re,text);
+ assert.throws(()=>parsePlan(JSON.stringify(Array.from({length:32},()=>({data:'2026-11-13',titulo:'x'})))),/mais de 31/);
 });

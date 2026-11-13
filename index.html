@@ -82,6 +82,7 @@
     <div id="queuePanel" class="queue" hidden></div>
     <main id="days"></main>
     <button id="new" class="full">+ Novo treino</button>
+    <button id="pastePlan" class="secondary full">Colar plano</button>
   </section>
 
   <section id="tabRank" hidden>
@@ -148,7 +149,7 @@
       <p>iPhone: no Safari, Compartilhar → Adicionar à Tela de Início. Android: no Chrome, menu ⋮ → Instalar app.</p>
       <button id="installBtn" hidden>Instalar aplicativo</button>
     </div>
-    <footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Versão 2.6.2.</footer>
+    <footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Versão 2.7.0.</footer>
   </section>
 </section>
 
@@ -178,6 +179,34 @@
     <div class="buttons">
       <button class="secondary" type="button" data-close="sessionDialog">Cancelar</button>
       <button type="submit">Salvar treino</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="planDialog">
+  <form id="planForm">
+    <h2>Colar plano</h2>
+    <div id="planStep1">
+      <p class="hint">Cole o plano no formato combinado (lista JSON). Nada é salvo antes de você revisar e confirmar.</p>
+      <label>Plano<textarea id="planText" rows="8" spellcheck="false" placeholder='[{"data":"2026-11-13","titulo":"Rodagem leve 8-10 km","descricao":"Ritmo solto.","km":8}]'></textarea></label>
+      <p id="planError" class="hint" role="alert"></p>
+      <div class="buttons">
+        <button class="secondary" type="button" data-close="planDialog">Cancelar</button>
+        <button type="button" id="planReview">Revisar</button>
+      </div>
+    </div>
+    <div id="planStep2" hidden>
+      <p id="planSummary"></p>
+      <ul id="planList" class="plan-list"></ul>
+      <fieldset>
+        <legend>Atletas</legend>
+        <p class="hint">Escolha para quem criar. Pelo menos um.</p>
+        <div id="planTargets" class="targets"></div>
+      </fieldset>
+      <div class="buttons">
+        <button class="secondary" type="button" id="planBack">Voltar</button>
+        <button type="submit">Criar treinos</button>
+      </div>
     </div>
   </form>
 </dialog>
