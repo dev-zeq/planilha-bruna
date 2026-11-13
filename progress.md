@@ -524,3 +524,12 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Verificação do PR: GitHub Actions Tests run [43105605489](https://github.com/dev-zeq/planilha-bruna/actions/runs/43105605489), job `verify` com conclusão success: npm test/check, Deno check, SDK e navegador Chrome.
 - A primeira importação nova real via webhook e o teste de correspondência da sugestão no celular permanecem pendentes. A confirmação de publicação do GitHub Pages após o merge também precisa ser verificada separadamente.
 - Não houve migração de banco; resultados Strava existentes não foram alterados por esta entrega.
+
+
+## 2026-11-13 — Treinos de 13–15/11 e "Colar plano" (2.7.0)
+
+- Criados pela RPC `apply_training_operation` (papel authenticated, `auth.uid` do Ezequiel, `kind: create`, versão 0), para Ezequiel e Bruna, três treinos: 13/11 Rodagem leve 8-10 km, 14/11 Rodagem leve 6-10 km, 15/11 Longão 20 km com blocos em ritmo de prova. O responsável autorizou o conector administrativo do Supabase para esta operação. Renato não foi incluído.
+- Os três treinos provisórios dessas datas ("A definir", "A definir", "Longo (possibilidade)") foram excluídos depois pelo responsável, pelo app (exclusão lógica, versão 2). Nenhum outro registro alterado.
+- Decisão: não adicionar IA ao app. Em vez disso, botão **Colar plano** (`parsePlan`/`planOperations` em `core.mjs`, janela em `index.html`): recebe JSON, valida, mostra prévia, exige escolher atletas e só então enfileira operações `create` comuns. Formato no README.
+- Testes: 3 casos novos em `tests/core.test.mjs` (total 39 aprovados), sintaxe aprovada e cenário novo no `tests/browser-scenarios.js` (erro sem gravar, prévia sem gravar, escape de HTML, um atleta, repetição ignorada) aprovado localmente em Chrome. Sem alteração de banco, Edge Function ou credenciais.
+- Pendente: CI do PR, publicação e teste real no celular.

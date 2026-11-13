@@ -98,3 +98,32 @@ export function sessionState(session,result,todayISO) {
  if(session.training_date<todayISO) return 'late';
  return session.state==='open'?'open':'planned';
 }
+
+// "Colar plano": a JSON list written outside the app (for example by Claude) is validated here and
+// turned into ordinary "create" operations. Nothing is saved until the athlete confirms the preview.
+export const PLAN_MAX_ITEMS=31;
+export function parsePlan(text,existing=[]) {
+ let raw;
+ try{raw=JSON.parse(String(text).trim());}catch{throw Error('O plano não é um JSON válido. Cole exatamente o texto recebido, começando em [ e terminando em ].');}
+ const list=Array.isArray(raw)?raw:raw?.treinos;
+ if(!Array.isArray(list)||!list.length) throw Error('O plano precisa ser uma lista com pelo menos um treino.');
+ if(list.length>PLAN_MAX_ITEMS) throw Error(`O plano tem mais de ${PLAN_MAX_ITEMS} treinos.`);
+ const items=[],skipped=[];
+ list.forEach((x,i)=>{
+  const where=`Treino ${i+1}`;
+  if(!x||typeof x!=='object'||Array.isArray(x)) throw Error(`${where}: formato inválido.`);
+  const date=x.data,title=typeof x.titulo==='string'?x.titulo.trim():'',description=x.descricao==null?'':x.descricao,period=x.periodo==null?'Não definido':x.periodo;
+  if(typeof date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(date)||new Date(date+'T12:00:00Z').toISOString().slice(0,10)!==date) throw Error(`${where}: "data" deve ser AAAA-MM-DD e existir no calendário.`);
+  if(!title||title.length>160) throw Error(`${where}: "titulo" é obrigatório (até 160 caracteres).`);
+  if(typeof description!=='string'||description.length>20000) throw Error(`${where}: "descricao" deve ser texto (até 20.000 caracteres).`);
+  if(!PERIODS.includes(period)) throw Error(`${where}: "periodo" deve ser ${PERIODS.join(', ')}.`);
+  const km=numberOrNull(x.km??null);
+  const item={training_date:date,period,title,description:description.trim(),planned_km:km};
+  if(existing.some(s=>s.training_date===date&&s.title.trim().toLowerCase()===title.toLowerCase())||items.some(y=>y.training_date===date&&y.title.toLowerCase()===title.toLowerCase())) skipped.push(item); else items.push(item);
+ });
+ return {items,skipped};
+}
+export function planOperations(items,group,targets,newId) {
+ if(!Array.isArray(targets)||!targets.length) throw Error('Escolha pelo menos um atleta.');
+ return items.map(x=>({kind:'create',version:0,data:{id:newId(),group_id:group,...x,state:'planned',target_user_ids:[...targets]}}));
+}

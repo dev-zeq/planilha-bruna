@@ -64,3 +64,18 @@ CI em `.github/workflows/tests.yml`. Publicação permanece por main no GitHub P
 Sincronização automática ativada pelo responsável: corridas novas/alterações no Strava serão recebidas pelo servidor, mesmo com o Treinos fechado. Aguarde o relógio/Zepp/Garmin terminar de enviar ao Strava. O processamento pode levar alguns minutos e depende da disponibilidade/limites do Strava; o botão de sincronização manual continua disponível.
 
 Se o relógio gravou aquecimento, treino principal e desaquecimento separadamente, marque todas as partes em **Meu Strava**, toque em **Vincular atividades selecionadas**, confira os totais e confirme o treino da agenda. O resultado reúne distância e tempo em movimento, com pace calculado pelos totais. Não há agrupamento automático de sessões diferentes nem conclusão dos outros atletas.
+
+### Colar plano — versão 2.7.0
+
+Na aba Semana, **Colar plano** recebe uma lista JSON escrita fora do app (por exemplo, por Claude), mostra uma prévia e só então cria os treinos. Não usa IA nem chave de API: o texto é validado no próprio aparelho e cada treino segue o fluxo normal (fila local + RPC `apply_training_operation`, `kind: create`, versão 0).
+
+```json
+[
+  {"data":"2026-11-13","titulo":"Rodagem leve 8-10 km","descricao":"Ritmo solto.","periodo":"Manhã","km":8}
+]
+```
+
+- Obrigatórios: `data` (AAAA-MM-DD, existente no calendário) e `titulo` (até 160 caracteres). Opcionais: `descricao`, `periodo` (Manhã, Tarde, Noite ou Não definido; padrão Não definido) e `km`. Também vale `{"treinos":[...]}`. Máximo de 31 treinos por plano.
+- Qualquer erro recusa o plano inteiro, com mensagem; nada é gravado pela metade.
+- Treino com mesma data e mesmo título de um já existente na agenda é ignorado, para não duplicar ao colar duas vezes.
+- Os atletas são escolhidos na prévia (por padrão, quem está sendo visto). É preciso marcar pelo menos um; não existe "todos" implícito.
