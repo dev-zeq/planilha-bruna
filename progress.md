@@ -533,3 +533,11 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Decisão: não adicionar IA ao app. Em vez disso, botão **Colar plano** (`parsePlan`/`planOperations` em `core.mjs`, janela em `index.html`): recebe JSON, valida, mostra prévia, exige escolher atletas e só então enfileira operações `create` comuns. Formato no README.
 - Testes: 3 casos novos em `tests/core.test.mjs` (total 39 aprovados), sintaxe aprovada e cenário novo no `tests/browser-scenarios.js` (erro sem gravar, prévia sem gravar, escape de HTML, um atleta, repetição ignorada) aprovado localmente em Chrome. Sem alteração de banco, Edge Function ou credenciais.
 - Pendente: CI do PR, publicação e teste real no celular.
+
+
+## 2026-11-14 — Contraste do cartão laranja do Strava (2.7.1)
+
+- Revisão visual feita por agentes (só leitura). Medição confirmou que o texto branco sobre `#fc4c02` tinha contraste 3,40:1, abaixo do AA (4,5:1) para texto de 14 px; o botão (`#a32d00` sobre branco, 7,16:1) já estava correto.
+- Correção mínima: fundo do cartão `.strava-suggestion` passa para `#c93c00` (branco sobre ele: 5,08:1). Cache do service worker e rodapé em 2.7.1.
+- Não alterados, por falta de verificação visual: destaque do cartão quando não há sugestão acionável e a etiqueta "Feito" (5,30:1 claro / 8,34:1 escuro, já adequada).
+- Sem mudança de banco, Edge Function ou lógica.
