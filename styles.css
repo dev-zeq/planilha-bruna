@@ -116,6 +116,30 @@ textarea { min-height: 96px; resize: vertical; }
 .tabs button.active { color: var(--primary); }
 .tabs svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
+/* Pace tab */
+.pace-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.pace-row-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pace-row label { min-width: 0; }
+#tabPace label { display: grid; gap: 6px; margin-top: 12px; font-size: 14px; font-weight: 600; }
+#tabPace .pace-row { margin-top: 0; }
+.pace-stat.wide { grid-column: 1 / -1; }
+.pace-row input, .pace-row select { width: 100%; min-width: 0; }
+.pace-error { color: var(--warn); min-height: 1.45em; margin: 6px 0; }
+.pace-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 14px; }
+.pace-stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.pace-stat dt { font-size: 12px; color: var(--text-2); }
+.pace-stat dd { font-size: 22px; font-weight: 700; margin: 2px 0 0; font-variant-numeric: tabular-nums; }
+.pace-stat dd small { font-size: 12px; font-weight: 600; color: var(--text-2); margin-left: 3px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); margin-bottom: 10px; }
+.pace-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.pace-table th, .pace-table td { padding: 8px 8px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.pace-table thead th { font-size: 11px; color: var(--text-2); font-weight: 600; background: var(--soft); }
+.pace-table tbody th { text-align: left; font-weight: 600; }
+.pace-table thead th:first-child { text-align: left; }
+.pace-table tbody tr:last-child th, .pace-table tbody tr:last-child td { border-bottom: 0; }
+.pace-table small { color: var(--text-2); font-weight: 500; }
+.pace-pick { min-height: 36px; min-width: 56px; padding: 0 8px; background: var(--soft); color: var(--primary); border: 1px solid var(--line-strong); border-radius: 8px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
 /* Week tab */
 .people { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
 .people button {
