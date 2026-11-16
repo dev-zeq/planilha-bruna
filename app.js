@@ -1,4 +1,5 @@
 import {setupStrava,takeStravaReturn} from './strava-client.mjs';
+import {setupPace} from './pace-ui.mjs';
 import {LEGACY_KEY, PERIODS, escapeHTML as esc, isoLocal, monday, durationSeconds, durationText, paceText, numberOrNull, validateLegacy, legacyOperations, legacyUUID, projectSnapshot, lockWithTakeover, sessionState, SESSION_STATES, parsePlan, planOperations} from './core.mjs';
 
 const stravaReturn=takeStravaReturn();
@@ -145,7 +146,7 @@ function renderRank(){
 }
 function setTab(name){
  tab=name;
- for(const [id,key] of [['tabWeek','week'],['tabRank','rank'],['tabStrava','strava'],['tabAccount','account']])$(id).hidden=key!==name;
+ for(const [id,key] of [['tabWeek','week'],['tabRank','rank'],['tabPace','pace'],['tabStrava','strava'],['tabAccount','account']])$(id).hidden=key!==name;
  for(const b of $('tabs').querySelectorAll('button')){const on=b.dataset.tab===name;b.classList.toggle('active',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}
  if(name==='rank')renderRank();
  if(name==='strava')stravaUI?.show();
@@ -286,6 +287,7 @@ $('planForm').onsubmit=e=>{e.preventDefault();void guarded(async()=>{
  planItems=[];$('planDialog').close();
 },e.submitter);};$('prev').onclick=()=>{week.setDate(week.getDate()-7);render();};$('next').onclick=()=>{week.setDate(week.getDate()+7);render();};$('today').onclick=()=>{week=monday();scrollToToday=true;render();};
 $('filters').onclick=e=>{const b=e.target.closest('[data-filter]');if(b){viewing=b.dataset.filter;render();}};
+setupPace();
 $('tabs').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)setTab(b.dataset.tab);};
 $('rankPeriod').onclick=e=>{const b=e.target.closest('[data-rank]');if(b){rankRange=b.dataset.rank;renderRank();}};
 // A day with workouts scrolls into view; an empty day starts a new workout on that date.

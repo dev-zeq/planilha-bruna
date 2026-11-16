@@ -541,3 +541,13 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Correção mínima: fundo do cartão `.strava-suggestion` passa para `#c93c00` (branco sobre ele: 5,08:1). Cache do service worker e rodapé em 2.7.1.
 - Não alterados, por falta de verificação visual: destaque do cartão quando não há sugestão acionável e a etiqueta "Feito" (5,30:1 claro / 8,34:1 escuro, já adequada).
 - Sem mudança de banco, Edge Function ou lógica.
+
+
+## 2026-11-16 — Aba Pace: calculadora de ritmo e pista (2.8.0)
+
+- Pedido do responsável: calculadora e tabelas para, a partir do tempo da volta de 400 m, obter pace, e saber quantas voltas dão km e milhas.
+- Nova aba "Pace" (5ª no menu) com quatro telas: Ritmo, Voltas, Tabela e Parciais. Cálculos puros em `pace.mjs`; tela em `pace-ui.mjs`. Tudo local, sem rede nem armazenamento, e sem mudança de banco, Edge Function ou credenciais.
+- Arquivos novos entram no cache do PWA (`sw.js`, cache 2.8.0) e no `npm run check`.
+- Testes: 15 casos novos em `tests/pace.test.mjs` (total 54 aprovados): conversões, arredondamento sem "0:60", 1 milha = 4 voltas + 9,3 m, tabelas, parciais e limites. Cenário de navegador novo (cálculo, erro explicado, tabela que preenche a calculadora, parciais, sem rolagem lateral em 390 px).
+- Conferência visual em Chromium com dados fictícios, 390 px, temas claro e escuro. Falta conferir no celular real depois da publicação.
+- Fora do escopo: raia externa, previsão de prova entre distâncias, integração com os treinos da agenda.
