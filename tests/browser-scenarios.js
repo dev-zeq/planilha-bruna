@@ -52,7 +52,7 @@ try{
  const pick=(id,value)=>{$(id).value=value;$(id).dispatchEvent(new Event('change',{bubbles:true}));};
  const view=name=>document.querySelector(`[data-pace-view="${name}"]`).click();
  const fits=where=>assert(document.documentElement.scrollWidth<=innerWidth+1,'no horizontal overflow in '+where);
- type('paceInput','1:32');let text=$('paceResult').textContent;
+ type('paceInput','132');assert($('paceInput').value==='1:32','digits 132 become 1:32 by themselves');let text=$('paceResult').textContent;
  assert(['3:50','6:10','15,65','19:10','38:20','1:32.0'].every(x=>text.includes(x)),'lap 1:32 gives pace, mile pace, speed and race times: '+text.slice(0,200));fits('Ritmo');
  type('paceInput','1:92');assert($('paceError').textContent.includes('segundos')&&$('paceResult').textContent==='','invalid time is explained and clears the result');
  pick('paceMode','kmh');type('paceInput','18');assert($('paceResult').textContent.includes('3:20'),'18 km/h is 3:20/km');
@@ -61,7 +61,7 @@ try{
  view('table');assert($('tblResult').querySelectorAll('tbody tr').length===37,'default pace table has 37 rows');fits('Tabela');
  document.querySelector('[data-pace-km="230"]').click();assert(!$('paceView-calc').hidden&&$('paceMode').value==='km'&&$('paceInput').value==='3:50','tapping a table row fills the calculator');
  assert($('paceResult').textContent.includes('1:32.0'),'row 3:50/km gives a 1:32.0 lap');
- view('splits');type('spDist','10');type('spTime','38:20');pick('spEvery','400');
+ view('splits');type('spDist','10');type('spTime','3820');assert($('spTime').value==='38:20','digits 3820 become 38:20 by themselves');pick('spEvery','400');
  assert($('spResult').querySelectorAll('tbody tr').length===25&&$('spResult').querySelector('tbody tr:last-child').textContent.includes('38:20.0'),'10 km in 38:20 every 400 m: 25 rows ending on 38:20.0');fits('Parciais 400 m');
  pick('spEvery','1000');assert($('spResult').querySelectorAll('tbody tr').length===10,'10 km every 1 km: 10 rows');fits('Parciais 1 km');
  document.querySelector('[data-tab="week"]').click();assert(!$('tabWeek').hidden&&$('tabPace').hidden,'back to the week tab');}

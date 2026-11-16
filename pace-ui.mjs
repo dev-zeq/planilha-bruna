@@ -1,16 +1,17 @@
 // "Pace" tab: wires the calculators in index.html to the pure functions in pace.mjs.
 // Nothing here talks to the network or stores anything.
 import {escapeHTML as esc} from './core.mjs';
-import {MILE_M, timesTable, equivalents, toSecPerKm, toMeters, lapsText, lapsFor, paceTable, splits, parseTime, formatTime, formatNumber, fixedNumber, DISTANCES, LAP_M} from './pace.mjs';
+import {MILE_M, timesTable, equivalents, toSecPerKm, toMeters, lapsText, lapsFor, paceTable, splits, parseTime, formatTime, formatNumber, fixedNumber, maskTime, DISTANCES, LAP_M} from './pace.mjs';
 
 const $ = id => document.getElementById(id);
 const MODES = {
- lap: {label: 'Tempo da volta de 400 m', placeholder: '1:32', inputmode: 'text'},
- km: {label: 'Pace por km', placeholder: '3:50', inputmode: 'text'},
- mile: {label: 'Pace por milha', placeholder: '6:10', inputmode: 'text'},
+ lap: {label: 'Tempo da volta de 400 m', placeholder: '1:32', inputmode: 'decimal'},
+ km: {label: 'Pace por km', placeholder: '3:50', inputmode: 'decimal'},
+ mile: {label: 'Pace por milha', placeholder: '6:10', inputmode: 'decimal'},
  kmh: {label: 'Velocidade (km/h)', placeholder: '15,6', inputmode: 'decimal'},
 };
 const VIEWS = ['calc', 'laps', 'table', 'splits'];
+const TIME_MODES = ['lap', 'km', 'mile'];
 
 function card(title, value, unit = '', wide = false) {
  return `<div class="pace-stat${wide ? ' wide' : ''}"><dt>${esc(title)}</dt><dd>${esc(value)}${unit ? `<small>${esc(unit)}</small>` : ''}</dd></div>`;
@@ -24,6 +25,19 @@ function splitLabel(atM, everyM) {
 }
 
 export function setupPace() {
+ // Must come first: listeners run in the order they were added.
+ const mask = (el, active = () => true) => {
+  el.addEventListener('input', () => {
+   if (!active()) return;
+   const v = maskTime(el.value);
+   if (v !== el.value) { el.value = v; el.setSelectionRange?.(v.length, v.length); }
+  });
+  el.addEventListener('change', () => { if (active()) el.value = maskTime(el.value, true); });
+ };
+ mask($('paceInput'), () => TIME_MODES.includes($('paceMode').value));
+ mask($('tblFrom'));
+ mask($('tblTo'));
+ mask($('spTime'));
  const showView = name => {
   for (const v of VIEWS) $('paceView-' + v).hidden = v !== name;
   for (const b of $('paceViews').querySelectorAll('button')) {
@@ -59,13 +73,21 @@ export function setupPace() {
    + wrap(`<table class="pace-table"><thead><tr><th>Distância</th><th>Voltas</th><th>Tempo</th></tr></thead><tbody>${rows}</tbody></table>`)
    + `<p class="hint">Tempos calculados com o ritmo exato digitado, em ritmo constante. As voltas são de 400 m.</p>`;
  }, $('paceError'), $('paceResult'));
+ let shownMode = $('paceMode').value;
  const setMode = () => {
-  const m = MODES[$('paceMode').value];
+  shownMode = $('paceMode').value;
+  const m = MODES[shownMode];
   $('paceInputLabel').textContent = m.label;
   $('paceInput').placeholder = m.placeholder;
   $('paceInput').inputMode = m.inputmode;
  };
- $('paceMode').onchange = () => { setMode(); calc(true); };
+ $('paceMode').onchange = () => {
+  // A time ("1:32") makes no sense as a speed and vice versa, so the field starts over.
+  const wasTime = TIME_MODES.includes(shownMode);
+  setMode();
+  if (wasTime !== TIME_MODES.includes(shownMode)) $('paceInput').value = '';
+  calc(true);
+ };
  $('paceInput').oninput = () => calc(false);
  $('paceInput').onchange = () => calc(true);
 

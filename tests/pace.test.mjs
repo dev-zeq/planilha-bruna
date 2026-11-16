@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {parseTime,parseNumber,formatTime,formatNumber,fixedNumber,toSecPerKm,equivalents,lapsFor,lapsText,toMeters,timesTable,paceTable,splits,DISTANCES} from '../pace.mjs';
+import {parseTime,parseNumber,formatTime,formatNumber,fixedNumber,maskTime,toSecPerKm,equivalents,lapsFor,lapsText,toMeters,timesTable,paceTable,splits,DISTANCES} from '../pace.mjs';
 const close=(a,b,eps=0.01)=>assert.ok(Math.abs(a-b)<=eps,`${a} != ${b}`);
 
 test('parseTime accepts seconds, m:ss, decimals with dot or comma, and h:mm:ss',()=>{
@@ -68,3 +68,16 @@ test('splits: a final partial row, miles, and a limit on the number of rows',()=
  assert.throws(()=>splits(200000,60000,400),/Muitas/);assert.throws(()=>splits(0,100,400),/Informe/);
 });
 const MILE=1609.344;
+
+test('maskTime inserts the colons from the right as you type digits',()=>{
+ const cases={'':'','1':'1','13':'13','132':'1:32','1:32':'1:32','3820':'38:20','12055':'1:20:55','1:20:55':'1:20:55','123055':'12:30:55','0:45':'0:45','1:3':'13','abc':'','1234567':'12:34:56'};
+ for(const [raw,want] of Object.entries(cases))assert.equal(maskTime(raw),want,JSON.stringify(raw));
+});
+test('maskTime keeps tenths after a comma or dot and drops a dangling separator when finished',()=>{
+ assert.equal(maskTime('132,5'),'1:32.5');assert.equal(maskTime('132.567'),'1:32.56');assert.equal(maskTime('132,'),'1:32.');
+ assert.equal(maskTime('132,',true),'1:32');assert.equal(maskTime(',5'),'');assert.equal(maskTime('13.5'),'13.5');
+});
+test('what maskTime produces is always accepted by parseTime',()=>{
+ for(const raw of ['132','1:32','3820','12055','132,5','350','0045'])assert.ok(parseTime(maskTime(raw,true))>0,raw);
+ assert.equal(parseTime(maskTime('132')),92);assert.equal(parseTime(maskTime('350')),230);assert.equal(parseTime(maskTime('3820')),2300);assert.equal(parseTime(maskTime('12055')),4855);
+});

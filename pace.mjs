@@ -37,6 +37,23 @@ export function parseTime(text) {
  return seconds;
 }
 
+// Typing aid for time fields: only the digits matter and the colons are inserted for you,
+// counting from the right (132 -> 1:32, 3820 -> 38:20, 12055 -> 1:20:55). One or two digits stay
+// as typed (seconds). A comma or dot starts the tenths (1:32,5). Pass final=true on leaving the
+// field to drop a dangling separator.
+export function maskTime(raw, final = false) {
+ const [, head, sep, tail] = String(raw ?? '').match(/^([^.,]*)([.,]?)([\s\S]*)$/);
+ const d = head.replace(/\D/g, '').slice(0, 6);
+ if (!d) return '';
+ let out = d;
+ if (d.length > 2) {
+  const rest = d.slice(0, -2), ss = d.slice(-2);
+  out = rest.length <= 2 ? `${rest}:${ss}` : `${rest.slice(0, -2)}:${rest.slice(-2)}:${ss}`;
+ }
+ const dec = tail.replace(/\D/g, '').slice(0, 2);
+ return sep && !(final && !dec) ? `${out}.${dec}` : out;
+}
+
 // Rounds first, then splits, so 59.96 s never prints as "0:60.0".
 export function formatTime(seconds, decimals = 0) {
  const f = 10 ** decimals, units = Math.round(seconds * f);
