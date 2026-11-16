@@ -88,5 +88,6 @@ Calculadora de ritmo e pista, toda no aparelho (sem rede, sem banco, nada é gua
 - **Voltas:** quantas voltas de 400 m tem uma distância em km, milhas ou metros (1 milha = 4 voltas + 9,3 m), e uma lista de distâncias comuns.
 - **Tabela:** paces de uma faixa (padrão 3:30 a 6:30 por km, de 5 em 5 s), com volta de 400 m, pace por milha, km/h e tempo de 5 km e 10 km. Tocar num pace leva à calculadora.
 - **Parciais:** distância e tempo de uma prova, com parciais e acumulado a cada 400 m, 1 km ou 1 milha, em ritmo constante. A última linha fecha exatamente no tempo informado.
+- Nos campos de tempo basta digitar os números: os dois pontos entram sozinhos, contando da direita (`132` vira `1:32`, `3820` vira `38:20`, `12055` vira `1:20:55`; um ou dois dígitos ficam como segundos). Vírgula ou ponto começam os décimos (`1:32,5`). O teclado do celular é o numérico/decimal. Digitar os dois pontos à mão continua funcionando.
 - Tempo aceito como `92`, `1:32`, `1:32.5` ou `1:20:55` (ponto ou vírgula). Valores fora do possível (pace fora de 1:30 a 30:00 por km) são recusados com mensagem. 1 milha = 1.609,344 m.
 - Não inclui raias externas da pista nem previsão de prova entre distâncias diferentes.

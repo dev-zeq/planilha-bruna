@@ -108,7 +108,7 @@
     </div>
 
     <div id="paceView-calc">
-      <p class="hint">Digite um dado e veja o resto: pace por km e por milha, velocidade, volta de 400 m e o tempo em cada distância.</p>
+      <p class="hint">Digite um dado e veja o resto: pace por km e por milha, velocidade, volta de 400 m e o tempo em cada distância. Nos tempos, digite só os números: os dois pontos entram sozinhos (132 vira 1:32, 3820 vira 38:20). Use vírgula para os décimos (1:32,5).</p>
       <label>Eu tenho
         <select id="paceMode">
           <option value="lap">Tempo da volta de 400 m</option>
@@ -118,7 +118,7 @@
         </select>
       </label>
       <label><span id="paceInputLabel">Tempo da volta de 400 m</span>
-        <input id="paceInput" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="1:32">
+        <input id="paceInput" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="1:32">
       </label>
       <p id="paceError" class="hint pace-error" role="alert"></p>
       <div id="paceResult" aria-live="polite"></div>
@@ -141,8 +141,8 @@
     <div id="paceView-table" hidden>
       <p class="hint">Todos os paces de uma faixa. Toque num pace para levar à calculadora.</p>
       <div class="pace-row pace-row-3">
-        <label>De (min/km)<input id="tblFrom" inputmode="text" autocomplete="off" value="3:30"></label>
-        <label>Até (min/km)<input id="tblTo" inputmode="text" autocomplete="off" value="6:30"></label>
+        <label>De (min/km)<input id="tblFrom" inputmode="decimal" autocomplete="off" value="3:30"></label>
+        <label>Até (min/km)<input id="tblTo" inputmode="decimal" autocomplete="off" value="6:30"></label>
         <label>Passo
           <select id="tblStep"><option value="5" selected>5 s</option><option value="10">10 s</option><option value="15">15 s</option><option value="1">1 s</option></select>
         </label>
@@ -160,7 +160,7 @@
         </label>
       </div>
       <div class="pace-row">
-        <label>Tempo total<input id="spTime" inputmode="text" autocomplete="off" placeholder="38:20"></label>
+        <label>Tempo total<input id="spTime" inputmode="decimal" autocomplete="off" placeholder="38:20"></label>
         <label>Parcial a cada
           <select id="spEvery"><option value="400">400 m</option><option value="1000" selected>1 km</option><option value="1609.344">1 milha</option></select>
         </label>
@@ -223,7 +223,7 @@
       <p>iPhone: no Safari, Compartilhar → Adicionar à Tela de Início. Android: no Chrome, menu ⋮ → Instalar app.</p>
       <button id="installBtn" hidden>Instalar aplicativo</button>
     </div>
-    <footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Versão 2.8.0.</footer>
+    <footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Versão 2.8.1.</footer>
   </section>
 </section>
 

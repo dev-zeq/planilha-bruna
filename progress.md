@@ -551,3 +551,11 @@ A cada alteração, atualizar: **data, arquivos/área alterados, mudanças reali
 - Testes: 15 casos novos em `tests/pace.test.mjs` (total 54 aprovados): conversões, arredondamento sem "0:60", 1 milha = 4 voltas + 9,3 m, tabelas, parciais e limites. Cenário de navegador novo (cálculo, erro explicado, tabela que preenche a calculadora, parciais, sem rolagem lateral em 390 px).
 - Conferência visual em Chromium com dados fictícios, 390 px, temas claro e escuro. Falta conferir no celular real depois da publicação.
 - Fora do escopo: raia externa, previsão de prova entre distâncias, integração com os treinos da agenda.
+
+
+## 2026-11-16 — Pace: dois pontos automáticos nos tempos (2.8.1)
+
+- Pedido do responsável: ao digitar um tempo, inserir os dois pontos sozinho em vez de digitar só números e depois o `:`.
+- `maskTime()` em `pace.mjs` (pura, testada): conta da direita (132 → 1:32, 3820 → 38:20, 12055 → 1:20:55), mantém 1–2 dígitos como segundos, aceita vírgula/ponto para décimos e remove separador solto ao sair do campo. Aplicada nos campos de tempo da aba Pace, menos no de km/h; o campo é limpo ao trocar entre tempo e velocidade. Teclado do celular passa a `inputmode="decimal"`.
+- Mudança de comportamento: um número como `132` agora vale 1:32 (antes valia 132 segundos), o que é o esperado para voltas e paces.
+- Testes: 57 unitários aprovados (3 novos) e o cenário de navegador cobre a digitação. Conferido também tecla a tecla em Chromium, incluindo apagar. Versão e cache 2.8.1. Sem banco, Strava ou credenciais.
