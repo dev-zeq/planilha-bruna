@@ -63,21 +63,22 @@ function updateSync(){
 function sessionCard(s,result,own,stravaPrivate,todayISO){
  const done=result?.status==='done',state=sessionState(s,result,todayISO);
  const tag=s.pending?'Aguardando envio':SESSION_STATES[state];
- const meta=[s.period!=='Não definido'?s.period:'',s.planned_km!=null?fmtKm(s.planned_km)+' km planejados':''].filter(Boolean).join(' · ');
+ const periodTone=s.period==='Manhã'?'morning':s.period==='Tarde'?'afternoon':s.period==='Noite'?'night':'';
+ const chips=[s.period!=='Não definido'?`<span class="chip ${periodTone}">${esc(s.period)}</span>`:'',s.planned_km!=null?`<span class="chip km-plan">${esc(fmtKm(s.planned_km)+' km planejados')}</span>`:''].filter(Boolean).join('');
  let outcome='';
  if(done){
-  const parts=['✓ Feito'];
-  if(result.actual_km!=null)parts.push(fmtKm(result.actual_km)+' km');
-  if(result.duration_seconds!=null)parts.push(durationText(result.duration_seconds),paceText(result.actual_km,result.duration_seconds));
-  if(result.source==='strava')parts.push(stravaPrivate?'Strava (privado)':'Strava');
+  const pills=[['res-done','✓ Feito']];
+  if(result.actual_km!=null)pills.push(['res-km',fmtKm(result.actual_km)+' km']);
+  if(result.duration_seconds!=null)pills.push(['res-time',durationText(result.duration_seconds)],['res-pace',paceText(result.actual_km,result.duration_seconds)]);
+  if(result.source==='strava')pills.push(['res-strava',stravaPrivate?'Strava (privado)':'Strava']);
   // Credit the recording device, as the Strava API policy requires for Garmin data.
-  if(result.source_device)parts.push(result.source_device);
-  if(result.pending)parts.push('envio pendente');
-  outcome=`<p class="result ok">${esc(parts.join(' · '))}</p>`;
+  if(result.source_device)pills.push(['res-device',result.source_device]);
+  if(result.pending)pills.push(['res-pending','envio pendente']);
+  outcome=`<div class="result ok">${pills.map(([cls,txt])=>`<span class="res-pill ${cls}">${esc(txt)}</span>`).join(' ')}</div>`;
  }else if(result?.status==='skipped')outcome=`<p class="result skip">Não realizado${result.pending?' · envio pendente':''}</p>`;
  else if(!own)outcome='<p class="result none">Ainda não registrado</p>';
  if(result?.notes)outcome+=`<p class="notes">${esc(result.notes)}</p>`;
- return `<article class="entry ${state}"><div class="head"><strong>${esc(s.title)}</strong>${tag?`<span class="tag${s.pending?'':' '+state}">${tag}</span>`:''}<details class="menu"><summary aria-label="Mais ações">⋯</summary><div><button class="secondary" data-edit="${s.id}">Editar</button><button class="danger" data-delete="${s.id}">Excluir</button></div></details></div>${meta?`<p class="meta">${esc(meta)}</p>`:''}${s.description?`<p class="desc">${esc(s.description)}</p>`:''}${outcome}${own?`<button class="full${(result&&result.status!=='planned')||state==='planned'||state==='open'?' secondary':''}" data-result="${s.id}">${done?'Meu resultado':'Concluir treino'}</button>`:''}</article>`;
+ return `<article class="entry ${state}"><div class="head"><strong>${esc(s.title)}</strong>${tag?`<span class="tag${s.pending?'':' '+state}">${tag}</span>`:''}<details class="menu"><summary aria-label="Mais ações">⋯</summary><div><button class="secondary" data-edit="${s.id}">Editar</button><button class="danger" data-delete="${s.id}">Excluir</button></div></details></div>${chips?`<div class="meta">${chips}</div>`:''}${s.description?`<p class="desc">${esc(s.description)}</p>`:''}${outcome}${own?`<button class="full${(result&&result.status!=='planned')||state==='planned'||state==='open'?' secondary':''}" data-result="${s.id}">${done?'Meu resultado':'Concluir treino'}</button>`:''}</article>`;
 }
 function render(){
  if(!user||!group)return;
@@ -86,7 +87,7 @@ function render(){
  const own=viewing===user.id,q=queue(user.id),v=view(),end=addDays(week,6),from=isoLocal(week),to=isoLocal(end),todayISO=isoLocal(new Date());
  $('accountName').textContent=members.find(m=>m.user_id===user.id)?.display_name||user.email;
  const people=[...members].sort((a,b)=>(b.user_id===user.id)-(a.user_id===user.id));
- setHTML($('filters'),people.map(m=>`<button data-filter="${esc(m.user_id)}" class="${viewing===m.user_id?'active':''}" aria-pressed="${viewing===m.user_id}">${esc(m.display_name)}</button>`).join(''));
+ setHTML($('filters'),people.map(m=>{const tone=Math.max(0,members.findIndex(x=>x.user_id===m.user_id))%4;return `<button data-filter="${esc(m.user_id)}" data-tone="${tone}" class="${viewing===m.user_id?'active':''}" aria-pressed="${viewing===m.user_id}"><span class="dot" aria-hidden="true"></span>${esc(m.display_name)}</button>`;}).join(''));
  $('period').textContent=weekLabel(week,end);
  $('today').hidden=isoLocal(monday())===from;
  const sessions=v.sessions.filter(s=>s.training_date>=from&&s.training_date<=to&&(!s.target_user_ids.length||s.target_user_ids.includes(viewing)));
@@ -111,7 +112,7 @@ function render(){
  const emptyText=empty.length===7?'Nenhum treino nesta semana. Toque em um dia ou em Novo treino para planejar.'
   :empty.length?cap(empty.length>1?empty.slice(0,-1).join(', ')+' e '+empty.at(-1):empty[0])+' sem treino'
   :'';
- setHTML($('days'),days.filter(d=>d.rows.length).map(d=>`<section class="day" id="day-${d.iso}"><h2>${d.iso===todayISO?'Hoje, ':''}${esc(d.iso===todayISO?d.name:cap(d.name))} ${d.date.getDate()}</h2>${d.rows.map(s=>sessionCard(s,resultOf(s),own,stravaPrivate,todayISO)).join('')}</section>`).join('')+(emptyText?`<p class="empty-days">${esc(emptyText)}</p>`:''));
+ setHTML($('days'),days.filter(d=>d.rows.length).map(d=>`<section class="day${d.iso===todayISO?' is-today':''}" id="day-${d.iso}"><h2>${d.iso===todayISO?'<span class="day-today">Hoje</span> ':''}<span class="day-name">${esc(d.iso===todayISO?d.name:cap(d.name))} ${d.date.getDate()}</span><span class="day-count">${d.rows.length}</span></h2>${d.rows.map(s=>sessionCard(s,resultOf(s),own,stravaPrivate,todayISO)).join('')}</section>`).join('')+(emptyText?`<p class="empty-days">${esc(emptyText)}</p>`:''));
  if(scrollToToday){
   scrollToToday=false;
   const first=days.find(d=>d.rows.length);
@@ -141,7 +142,7 @@ function renderRank(){
  const max=Math.max(0,...rows.map(r=>r.km));
  for(const b of $('rankPeriod').querySelectorAll('button')){b.classList.toggle('active',b.dataset.rank===rankRange);b.setAttribute('aria-pressed',b.dataset.rank===rankRange);}
  $('rankLabel').textContent=label;
- setHTML($('rankList'),rows.map((r,i)=>`<li class="${r.m.user_id===user.id?'me':''}"><span class="pos">${i+1}</span><strong>${esc(r.m.display_name)}</strong><span class="km">${fmtKm(r.km)} km</span><div class="progress"><div style="width:${max?Math.round(r.km/max*100):0}%"></div></div><small>${r.count} treino${r.count===1?'':'s'} concluído${r.count===1?'':'s'}</small></li>`).join(''));
+ setHTML($('rankList'),rows.map((r,i)=>`<li class="${r.m.user_id===user.id?'me':''}${i<3?' rank-'+(i+1):''}"><span class="pos">${i+1}</span><strong class="rank-name">${esc(r.m.display_name)}${r.m.user_id===user.id?' <span class="me-tag">Você</span>':''}</strong><span class="km">${fmtKm(r.km)} km</span><div class="progress"><div style="width:${max?Math.round(r.km/max*100):0}%"></div></div><small>${r.count} treino${r.count===1?'':'s'} concluído${r.count===1?'':'s'}</small></li>`).join(''));
 }
 function setTab(name){
  tab=name;
