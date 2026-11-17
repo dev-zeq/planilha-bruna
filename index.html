@@ -59,6 +59,9 @@
     <button data-tab="rank">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-6M12 20V5M19 20v-9"/></svg>Ranking
     </button>
+    <button data-tab="pace">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="7"/><path d="M12 13V9M9 3h6"/></svg>Pace
+    </button>
     <button data-tab="strava">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h4l3-8 4 14 3-6h4"/></svg>Strava
     </button>
@@ -97,6 +100,77 @@
     <h2 class="section-title" id="rankLabel"></h2>
     <ol id="rankList" class="rank"></ol>
     <p class="hint">Soma da distância dos treinos concluídos no período. Treinos vindos do Strava só contam para os outros atletas quando quem correu ativa o compartilhamento na aba Strava.</p>
+  </section>
+
+  <section id="tabPace" hidden>
+    <div class="segmented" id="paceViews" aria-label="Ferramentas de pace e pista">
+      <button type="button" data-pace-view="calc" class="active" aria-pressed="true">Ritmo</button>
+      <button type="button" data-pace-view="laps" aria-pressed="false">Voltas</button>
+      <button type="button" data-pace-view="table" aria-pressed="false">Tabela</button>
+      <button type="button" data-pace-view="splits" aria-pressed="false">Parciais</button>
+    </div>
+
+    <div id="paceView-calc">
+      <p class="hint">Digite um dado e veja o resto: pace por km e por milha, velocidade, volta de 400 m e o tempo em cada distância. Nos tempos, digite só os números: os dois pontos entram sozinhos (132 vira 1:32, 3820 vira 38:20). Use vírgula para os décimos (1:32,5).</p>
+      <label>Eu tenho
+        <select id="paceMode">
+          <option value="lap">Tempo da volta de 400 m</option>
+          <option value="km">Pace por km</option>
+          <option value="mile">Pace por milha</option>
+          <option value="kmh">Velocidade (km/h)</option>
+        </select>
+      </label>
+      <label><span id="paceInputLabel">Tempo da volta de 400 m</span>
+        <input id="paceInput" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="1:32">
+      </label>
+      <p id="paceError" class="hint pace-error" role="alert"></p>
+      <div id="paceResult" aria-live="polite"></div>
+    </div>
+
+    <div id="paceView-laps" hidden>
+      <p class="hint">Quantas voltas de 400 m tem uma distância.</p>
+      <div class="pace-row">
+        <label>Distância<input id="lapsInput" inputmode="decimal" autocomplete="off" placeholder="5"></label>
+        <label>Unidade
+          <select id="lapsUnit"><option value="km">km</option><option value="mile">milhas</option><option value="m">metros</option></select>
+        </label>
+      </div>
+      <p id="lapsError" class="hint pace-error" role="alert"></p>
+      <div id="lapsResult" aria-live="polite"></div>
+      <h3 class="section-title">Distâncias comuns</h3>
+      <div id="lapsTable"></div>
+    </div>
+
+    <div id="paceView-table" hidden>
+      <p class="hint">Todos os paces de uma faixa. Toque num pace para levar à calculadora.</p>
+      <div class="pace-row pace-row-3">
+        <label>De (min/km)<input id="tblFrom" inputmode="decimal" autocomplete="off" value="3:30"></label>
+        <label>Até (min/km)<input id="tblTo" inputmode="decimal" autocomplete="off" value="6:30"></label>
+        <label>Passo
+          <select id="tblStep"><option value="5" selected>5 s</option><option value="10">10 s</option><option value="15">15 s</option><option value="1">1 s</option></select>
+        </label>
+      </div>
+      <p id="tblError" class="hint pace-error" role="alert"></p>
+      <div id="tblResult"></div>
+    </div>
+
+    <div id="paceView-splits" hidden>
+      <p class="hint">Parciais de uma prova em ritmo constante, por exemplo 10 km em 38:20.</p>
+      <div class="pace-row">
+        <label>Distância<input id="spDist" inputmode="decimal" autocomplete="off" placeholder="10"></label>
+        <label>Unidade
+          <select id="spUnit"><option value="km">km</option><option value="mile">milhas</option><option value="m">metros</option></select>
+        </label>
+      </div>
+      <div class="pace-row">
+        <label>Tempo total<input id="spTime" inputmode="decimal" autocomplete="off" placeholder="38:20"></label>
+        <label>Parcial a cada
+          <select id="spEvery"><option value="400">400 m</option><option value="1000" selected>1 km</option><option value="1609.344">1 milha</option></select>
+        </label>
+      </div>
+      <p id="spError" class="hint pace-error" role="alert"></p>
+      <div id="spResult" aria-live="polite"></div>
+    </div>
   </section>
 
   <section id="tabStrava" hidden>
@@ -152,7 +226,7 @@
       <p>iPhone: no Safari, Compartilhar → Adicionar à Tela de Início. Android: no Chrome, menu ⋮ → Instalar app.</p>
       <button id="installBtn" hidden>Instalar aplicativo</button>
     </div>
-    <footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Versão 2.7.2.</footer>
+    <footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Versão 2.8.2.</footer>
   </section>
 </section>
 

@@ -46,5 +46,24 @@ try{
  submit('planForm');await wait(()=>state.sessions.length===before+2);await wait(statusSynced);
  const made=state.sessions.slice(before);assert(made.every(x=>x.target_user_ids.length===1&&x.version===1&&x.state==='planned'),'created for one athlete via normal create');
  $('pastePlan').click();$('planText').value=plan;$('planReview').click();assert($('planError').textContent.includes('já constam'),'repeat ignored');assert(state.sessions.length===before+2,'no duplicates');$('planDialog').close();}
+ // Pace tab: calculators and tables work, errors are explained, and the page never scrolls sideways on mobile.
+ {document.querySelector('[data-tab="pace"]').click();assert(!$('tabPace').hidden&&$('tabWeek').hidden,'Pace tab shown');
+ const type=(id,value)=>{$(id).value=value;$(id).dispatchEvent(new Event('input',{bubbles:true}));$(id).dispatchEvent(new Event('change',{bubbles:true}));};
+ const pick=(id,value)=>{$(id).value=value;$(id).dispatchEvent(new Event('change',{bubbles:true}));};
+ const view=name=>document.querySelector(`[data-pace-view="${name}"]`).click();
+ const fits=where=>assert(document.documentElement.scrollWidth<=innerWidth+1,'no horizontal overflow in '+where);
+ type('paceInput','132');assert($('paceInput').value==='1:32','digits 132 become 1:32 by themselves');let text=$('paceResult').textContent;
+ assert(['3:50','6:10','15,65','19:10','38:20','1:32.0'].every(x=>text.includes(x)),'lap 1:32 gives pace, mile pace, speed and race times: '+text.slice(0,200));fits('Ritmo');
+ type('paceInput','1:92');assert($('paceError').textContent.includes('segundos')&&$('paceResult').textContent==='','invalid time is explained and clears the result');
+ pick('paceMode','kmh');type('paceInput','18');assert($('paceResult').textContent.includes('3:20'),'18 km/h is 3:20/km');
+ view('laps');assert(!$('paceView-laps').hidden&&$('paceView-calc').hidden,'laps view shown');type('lapsInput','1');pick('lapsUnit','mile');
+ assert($('lapsResult').textContent.includes('4 voltas + 9,3 m'),'one mile is 4 laps + 9,3 m: '+$('lapsResult').textContent);fits('Voltas');
+ view('table');assert($('tblResult').querySelectorAll('tbody tr').length===37,'default pace table has 37 rows');fits('Tabela');
+ document.querySelector('[data-pace-km="230"]').click();assert(!$('paceView-calc').hidden&&$('paceMode').value==='km'&&$('paceInput').value==='3:50','tapping a table row fills the calculator');
+ assert($('paceResult').textContent.includes('1:32.0'),'row 3:50/km gives a 1:32.0 lap');
+ view('splits');type('spDist','10');type('spTime','3820');assert($('spTime').value==='38:20','digits 3820 become 38:20 by themselves');pick('spEvery','400');
+ assert($('spResult').querySelectorAll('tbody tr').length===25&&$('spResult').querySelector('tbody tr:last-child').textContent.includes('38:20.0'),'10 km in 38:20 every 400 m: 25 rows ending on 38:20.0');fits('Parciais 400 m');
+ pick('spEvery','1000');assert($('spResult').querySelectorAll('tbody tr').length===10,'10 km every 1 km: 10 rows');fits('Parciais 1 km');
+ document.querySelector('[data-tab="week"]').click();assert(!$('tabWeek').hidden&&$('tabPace').hidden,'back to the week tab');}
  const result=document.createElement('pre');result.id='smoke-result';result.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere';result.textContent='PASS: invite password setup, login A/B/C, shared create/edit/delete, own completion, grouped warmup/main/cooldown, private Strava panel reset, manual sync and explicit CAS link, escaped HTML, persisted network failure, retry and CAS conflict';document.body.append(result);
 }catch(error){const result=document.createElement('pre');result.id='smoke-result';result.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere';result.textContent='FAIL: '+error.stack+'; STATUS: '+$('statusMessage').textContent;document.body.append(result);}

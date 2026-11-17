@@ -39,7 +39,7 @@ try {
  const mobile=await page('Page.captureScreenshot',{format:'png'});await fs.writeFile('test-results/mobile.png',Buffer.from(mobile.data,'base64'));
  const overflow=await page('Runtime.evaluate',{expression:'document.documentElement.scrollWidth>innerWidth+1',returnByValue:true});
  // Capture the other tabs as well, so layout regressions show up in the CI artifacts.
- for(const tab of ['rank','strava','account']){await page('Runtime.evaluate',{expression:`document.querySelector('[data-tab="${tab}"]').click()`});await new Promise(r=>setTimeout(r,150));const shot=await page('Page.captureScreenshot',{format:'png'});await fs.writeFile(`test-results/mobile-${tab}.png`,Buffer.from(shot.data,'base64'));}
+ for(const tab of ['rank','pace','strava','account']){await page('Runtime.evaluate',{expression:`document.querySelector('[data-tab="${tab}"]').click()`});await new Promise(r=>setTimeout(r,150));const shot=await page('Page.captureScreenshot',{format:'png'});await fs.writeFile(`test-results/mobile-${tab}.png`,Buffer.from(shot.data,'base64'));}
  await page('Runtime.evaluate',{expression:`document.querySelector('[data-tab="week"]').click()`});
  if(overflow.result.value){const detail=await page('Runtime.evaluate',{expression:"Array.from(document.querySelectorAll('body *')).filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>({tag:e.tagName,id:e.id,right:e.getBoundingClientRect().right})).slice(0,20)",returnByValue:true});console.log('Overflow elements:',detail.result.value);}
  await page('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
