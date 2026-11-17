@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Treinos | Agenda compartilhada</title>
-<meta name="theme-color" content="#123c38">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0d1722">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Treinos">
 <meta name="description" content="Organize sua agenda de treinos e acompanhe resultados individuais.">
 <meta name="referrer" content="no-referrer">
@@ -84,8 +85,10 @@
     </div>
     <div id="queuePanel" class="queue" hidden></div>
     <main id="days"></main>
-    <button id="new" class="full">+ Novo treino</button>
-    <button id="pastePlan" class="secondary full">Colar plano</button>
+    <div class="week-actions">
+      <button id="new" class="full">+ Novo treino</button>
+      <button id="pastePlan" class="secondary full">Colar plano</button>
+    </div>
   </section>
 
   <section id="tabRank" hidden>
@@ -223,7 +226,7 @@
       <p>iPhone: no Safari, Compartilhar → Adicionar à Tela de Início. Android: no Chrome, menu ⋮ → Instalar app.</p>
       <button id="installBtn" hidden>Instalar aplicativo</button>
     </div>
-    <footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Versão 2.8.1.</footer>
+    <footer>Agenda sincronizada com Supabase. Sem internet, as alterações ficam pendentes neste aparelho até o envio. Versão 2.8.2.</footer>
   </section>
 </section>
 
